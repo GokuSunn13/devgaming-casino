@@ -252,6 +252,7 @@
                 
                 <div class="game-status">
                     <div id="pokerGamePhase" class="phase-display">Oczekiwanie na graczy...</div>
+                    <div class="pot-display">💰 Pula: <span id="pokerPotDisplay">0</span> | Aktualna stawka: <span id="pokerCurrentBet">0</span></div>
                     <div id="pokerGameMessage" class="message-display"></div>
                 </div>
                 
@@ -262,6 +263,14 @@
                         <button id="pokerStartGameBtn" class="btn btn-gold">🃏 Rozpocznij Grę</button>
                         <button id="pokerNextPhaseBtn" class="btn btn-gold hidden">Następna Faza</button>
                         <button id="pokerNextRoundBtn" class="btn btn-gold hidden">Nowa Runda</button>
+                    </div>
+                    
+                    <div id="pokerBettingControls" class="betting-controls hidden">
+                        <div class="bet-chips-input">
+                            <label>Stawka:</label>
+                            <input type="number" id="pokerBetInput" min="1" value="10" class="chips-input">
+                            <button id="pokerPlaceBetBtn" class="btn btn-gold">💰 Postaw</button>
+                        </div>
                     </div>
                     
                     <div id="pokerPlayerControls" class="controls hidden">

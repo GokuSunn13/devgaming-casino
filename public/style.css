@@ -524,6 +524,24 @@ body {
     margin-bottom: 3px;
 }
 
+.pot-display {
+    font-size: 1rem;
+    color: #4caf50;
+    font-weight: bold;
+    margin: 5px 0;
+}
+
+.pot-display span {
+    color: #ffd700;
+}
+
+.my-chips-info {
+    text-align: center;
+    margin-top: 8px;
+    color: #ffd700;
+    font-weight: bold;
+}
+
 .message-display {
     color: rgba(255, 255, 255, 0.8);
     font-size: 0.85rem;

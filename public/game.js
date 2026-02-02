@@ -487,6 +487,10 @@ function updatePokerPlayersArea(state) {
     let listHtml = '';
     let myCardsHtml = '';
     
+    // Update pot display
+    document.getElementById('pokerPotDisplay').textContent = state.pot || 0;
+    document.getElementById('pokerCurrentBet').textContent = state.currentBetAmount || 0;
+    
     state.players.forEach((player) => {
         const isMe = player.id === myPlayerId;
         const isCurrentTurn = player.isCurrentTurn;
@@ -498,9 +502,9 @@ function updatePokerPlayersArea(state) {
         
         listHtml += `
             <div class="${itemClass}">
-                <div class="player-name">${isMe ? '👤 ' : ''}${player.name}</div>
+                <div class="player-name">${isMe ? '👤 ' : ''}${player.name}${player.isCroupier ? ' 🎩' : ''}</div>
                 <div class="player-chips">💰 ${player.chips || 0}</div>
-                <div class="player-status-text">${player.folded ? '❌ FOLD' : (isCurrentTurn ? '🎮 Gra' : '⏳ Czeka')}${player.currentBet ? ` (${player.currentBet})` : ''}</div>
+                <div class="player-status-text">${player.folded ? '❌ FOLD' : (isCurrentTurn ? '🎮 Gra' : '⏳ Czeka')}${player.currentBet ? ` (Stawka: ${player.currentBet})` : ''}</div>
             </div>
         `;
         
@@ -511,13 +515,15 @@ function updatePokerPlayersArea(state) {
             myCardsHtml = `
                 <h4>🃏 Twoje Karty</h4>
                 <div class="my-cards">${cardsHtml}</div>
+                <div class="my-chips-info">💰 Twoje żetony: ${player.chips || 0}</div>
             `;
         }
     });
     
     // Krupier widzi karty wszystkich graczy w zielonym polu
     if (currentRole === 'croupier') {
-        myCardsHtml = '<h4>🃏 Karty Graczy</h4><div class="all-players-cards">';
+        const myPlayer = state.players.find(p => p.id === myPlayerId);
+        myCardsHtml = '<h4>🃏 Karty Wszystkich</h4><div class="all-players-cards">';
         state.players.forEach((player) => {
             if (player.hand && player.hand.length > 0) {
                 const cardsHtml = player.hand.map(card => createCardHTML(card, false, false)).join('');
@@ -545,25 +551,37 @@ function updatePokerPlayersArea(state) {
 function updatePokerControls(state) {
     const croupierControls = document.getElementById('pokerCroupierControls');
     const playerControls = document.getElementById('pokerPlayerControls');
+    const bettingControls = document.getElementById('pokerBettingControls');
     
     if (currentRole === 'croupier') {
         croupierControls.classList.remove('hidden');
-        playerControls.classList.add('hidden');
         document.getElementById('pokerCroupierChipsControls').classList.remove('hidden');
         
         document.getElementById('pokerStartGameBtn').classList.toggle('hidden', state.gamePhase !== 'waiting');
         document.getElementById('pokerNextPhaseBtn').classList.toggle('hidden', 
-            !['preflop', 'flop', 'turn', 'river'].includes(state.gamePhase));
+            !['flop', 'turn', 'river'].includes(state.gamePhase));
         document.getElementById('pokerNextRoundBtn').classList.toggle('hidden', state.gamePhase !== 'finished');
+        
+        // Krupier też może stawiać i foldować gdy gra
+        const myPlayer = state.players.find(p => p.id === myPlayerId);
+        if (['flop', 'turn', 'river'].includes(state.gamePhase) && myPlayer && !myPlayer.folded) {
+            bettingControls.classList.remove('hidden');
+            playerControls.classList.remove('hidden');
+        } else {
+            bettingControls.classList.add('hidden');
+            playerControls.classList.add('hidden');
+        }
     } else {
         croupierControls.classList.add('hidden');
         document.getElementById('pokerCroupierChipsControls').classList.add('hidden');
         const myPlayer = state.players.find(p => p.id === myPlayerId);
         
-        if (myPlayer?.isCurrentTurn && ['preflop', 'flop', 'turn', 'river'].includes(state.gamePhase)) {
+        if (myPlayer && !myPlayer.folded && ['flop', 'turn', 'river'].includes(state.gamePhase)) {
             playerControls.classList.remove('hidden');
+            bettingControls.classList.remove('hidden');
         } else {
             playerControls.classList.add('hidden');
+            bettingControls.classList.add('hidden');
         }
     }
 }
@@ -573,6 +591,12 @@ document.getElementById('pokerAssignChipsBtn').addEventListener('click', () => {
     const playerId = document.getElementById('pokerAssignChipsPlayer').value;
     const amount = parseInt(document.getElementById('pokerAssignChipsAmount').value) || 0;
     socket.emit('pokerAssignChips', { playerId, amount });
+});
+
+// Poker betting
+document.getElementById('pokerPlaceBetBtn').addEventListener('click', () => {
+    const amount = parseInt(document.getElementById('pokerBetInput').value) || 0;
+    socket.emit('pokerPlaceBet', { amount });
 });
 
 // ==================== ROULETTE ====================
@@ -919,10 +943,9 @@ function formatPhase(phase) {
 function formatPokerPhase(phase) {
     const phases = {
         'waiting': '⏳ Oczekiwanie',
-        'preflop': '🃏 Pre-Flop',
-        'flop': '🃏 Flop',
-        'turn': '🃏 Turn',
-        'river': '🃏 River',
+        'flop': '🃏 Flop - Stawianie',
+        'turn': '🃏 Turn - Stawianie',
+        'river': '🃏 River - Stawianie',
         'showdown': '🏆 Showdown',
         'finished': '🏆 Zakończone'
     };

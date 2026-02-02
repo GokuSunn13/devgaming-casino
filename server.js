@@ -128,11 +128,12 @@ function createPokerTable(croupierId, croupierName) {
     const tableId = generateTableId();
     const table = {
         id: tableId,
-        croupier: { id: croupierId, name: croupierName },
+        croupier: { id: croupierId, name: croupierName, hand: [], chips: 0, folded: false, currentBet: 0 },
         players: [],
         deck: createDeck(),
         communityCards: [],
         currentPlayerIndex: -1,
+        currentBetAmount: 0,
         gamePhase: 'waiting'
     };
     pokerTables.set(tableId, table);
@@ -140,23 +141,41 @@ function createPokerTable(croupierId, croupierName) {
 }
 
 function getPokerTableState(table) {
-    return {
-        id: table.id,
-        croupier: table.croupier,
-        players: table.players.map(p => ({
+    // Get all participants (croupier + players)
+    const allParticipants = [
+        {
+            id: table.croupier.id,
+            name: table.croupier.name + ' (Krupier)',
+            hand: table.croupier.hand || [],
+            folded: table.croupier.folded || false,
+            chips: table.croupier.chips || 0,
+            currentBet: table.croupier.currentBet || 0,
+            isCroupier: true,
+            isCurrentTurn: table.currentPlayerIndex === -1 ? false :
+                          (table.currentPlayerIndex === 0 && table.croupierPlays)
+        },
+        ...table.players.map((p, idx) => ({
             id: p.id,
             name: p.name,
             hand: p.hand,
             folded: p.folded,
             chips: p.chips || 0,
             currentBet: p.currentBet || 0,
+            isCroupier: false,
             isCurrentTurn: table.currentPlayerIndex !== -1 && 
                           table.players[table.currentPlayerIndex]?.id === p.id
-        })),
+        }))
+    ];
+    
+    return {
+        id: table.id,
+        croupier: table.croupier,
+        players: allParticipants,
         communityCards: table.communityCards,
         gamePhase: table.gamePhase,
         pot: table.pot || 0,
-        playerCount: table.players.length
+        currentBetAmount: table.currentBetAmount || 0,
+        playerCount: table.players.length + 1 // +1 for croupier
     };
 }
 
@@ -663,14 +682,24 @@ io.on('connection', (socket) => {
     function startPokerRound(table) {
         table.deck = createDeck();
         table.communityCards = [];
-        table.gamePhase = 'preflop';
+        table.gamePhase = 'flop';
         table.pot = 0;
+        table.currentBetAmount = 0;
+        
+        // Reset croupier hand
+        table.croupier.hand = [];
+        table.croupier.folded = false;
+        table.croupier.currentBet = 0;
         
         table.players.forEach(p => {
             p.hand = [];
             p.folded = false;
             p.currentBet = 0;
         });
+        
+        // Deal 2 cards to croupier
+        table.croupier.hand.push(table.deck.pop());
+        table.croupier.hand.push(table.deck.pop());
         
         // Deal 2 cards to each player
         for (let i = 0; i < 2; i++) {
@@ -679,10 +708,16 @@ io.on('connection', (socket) => {
             });
         }
         
+        // Deal flop immediately (3 community cards)
+        table.deck.pop(); // Burn card
+        for (let i = 0; i < 3; i++) {
+            table.communityCards.push(table.deck.pop());
+        }
+        
         table.currentPlayerIndex = 0;
         
         io.to(table.id).emit('pokerTableUpdate', getPokerTableState(table));
-        io.to(table.id).emit('pokerMessage', { text: 'Karty rozdane! Pre-Flop.' });
+        io.to(table.id).emit('pokerMessage', { text: 'Karty rozdane! Flop na stole. Gracze mogą stawiać.' });
     }
     
     socket.on('pokerFold', () => {
@@ -740,19 +775,17 @@ io.on('connection', (socket) => {
     
     function advancePokerPhase(table) {
         table.currentPlayerIndex = 0;
+        table.currentBetAmount = 0;
+        
+        // Reset current bets for new round
+        table.croupier.currentBet = 0;
+        table.players.forEach(p => p.currentBet = 0);
+        
         while (table.players[table.currentPlayerIndex]?.folded) {
             table.currentPlayerIndex++;
         }
         
-        if (table.communityCards.length === 0) {
-            // Deal flop
-            table.deck.pop(); // Burn card
-            for (let i = 0; i < 3; i++) {
-                table.communityCards.push(table.deck.pop());
-            }
-            table.gamePhase = 'flop';
-            io.to(table.id).emit('pokerMessage', { text: 'Flop!' });
-        } else if (table.communityCards.length === 3) {
+        if (table.communityCards.length === 3) {
             // Deal turn
             table.deck.pop();
             table.communityCards.push(table.deck.pop());
@@ -767,7 +800,14 @@ io.on('connection', (socket) => {
         } else {
             // Showdown
             table.gamePhase = 'showdown';
-            const activePlayers = table.players.filter(p => !p.folded);
+            
+            // Include croupier in active players if not folded
+            const activePlayers = [];
+            if (!table.croupier.folded) {
+                activePlayers.push({ ...table.croupier, name: table.croupier.name });
+            }
+            table.players.filter(p => !p.folded).forEach(p => activePlayers.push(p));
+            
             let winner = activePlayers[0];
             let bestResult = { score: 0, handName: '' };
             
@@ -791,7 +831,13 @@ io.on('connection', (socket) => {
         
         // Give pot to winner
         const potWinnings = table.pot || 0;
-        winner.chips = (winner.chips || 0) + potWinnings;
+        
+        // Check if winner is croupier
+        if (winner.id === table.croupier.id) {
+            table.croupier.chips = (table.croupier.chips || 0) + potWinnings;
+        } else {
+            winner.chips = (winner.chips || 0) + potWinnings;
+        }
         
         io.to(table.id).emit('pokerTableUpdate', getPokerTableState(table));
         io.to(table.id).emit('pokerRoundResult', {
@@ -818,6 +864,14 @@ io.on('connection', (socket) => {
         const table = findPlayerTable(socket.id, pokerTables);
         if (!table || table.croupier.id !== socket.id) return;
         
+        // Check if assigning to croupier himself
+        if (data.playerId === table.croupier.id) {
+            table.croupier.chips = data.amount;
+            io.to(table.id).emit('pokerTableUpdate', getPokerTableState(table));
+            io.to(table.id).emit('pokerMessage', { text: `Krupier przydzielił sobie ${data.amount} żetonów` });
+            return;
+        }
+        
         const player = table.players.find(p => p.id === data.playerId);
         if (!player) return;
         
@@ -829,7 +883,28 @@ io.on('connection', (socket) => {
     
     socket.on('pokerPlaceBet', (data) => {
         const table = findPlayerTable(socket.id, pokerTables);
-        if (!table || table.gamePhase !== 'waiting') return;
+        if (!table) return;
+        if (!['flop', 'turn', 'river'].includes(table.gamePhase)) return;
+        
+        // Check if it's croupier betting
+        if (socket.id === table.croupier.id) {
+            const betAmount = parseInt(data.amount) || 0;
+            if (betAmount <= 0 || betAmount > (table.croupier.chips || 0)) {
+                socket.emit('error', { message: 'Nieprawidłowa stawka!' });
+                return;
+            }
+            
+            table.croupier.currentBet += betAmount;
+            table.croupier.chips -= betAmount;
+            table.pot = (table.pot || 0) + betAmount;
+            if (table.croupier.currentBet > table.currentBetAmount) {
+                table.currentBetAmount = table.croupier.currentBet;
+            }
+            
+            io.to(table.id).emit('pokerTableUpdate', getPokerTableState(table));
+            io.to(table.id).emit('pokerMessage', { text: `${table.croupier.name} postawił ${betAmount} żetonów!` });
+            return;
+        }
         
         const player = table.players.find(p => p.id === socket.id);
         if (!player) return;
@@ -840,9 +915,12 @@ io.on('connection', (socket) => {
             return;
         }
         
-        player.currentBet = betAmount;
+        player.currentBet += betAmount;
         player.chips -= betAmount;
         table.pot = (table.pot || 0) + betAmount;
+        if (player.currentBet > table.currentBetAmount) {
+            table.currentBetAmount = player.currentBet;
+        }
         
         io.to(table.id).emit('pokerTableUpdate', getPokerTableState(table));
         io.to(table.id).emit('pokerMessage', { text: `${player.name} postawił ${betAmount} żetonów!` });
