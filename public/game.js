@@ -479,6 +479,14 @@ function updatePokerState(state) {
     ).join('');
     document.getElementById('pokerGamePhase').textContent = formatPokerPhase(state.gamePhase);
     
+    // Wyświetl karty krupiera
+    const dealerCardsEl = document.getElementById('pokerDealerCards');
+    if (state.dealerHand && state.dealerHand.length > 0) {
+        dealerCardsEl.innerHTML = state.dealerHand.map(card => createCardHTML(card, false, false)).join('');
+    } else {
+        dealerCardsEl.innerHTML = '';
+    }
+    
     updatePokerPlayersArea(state);
     updatePokerControls(state);
 }
@@ -502,7 +510,7 @@ function updatePokerPlayersArea(state) {
         
         listHtml += `
             <div class="${itemClass}">
-                <div class="player-name">${isMe ? '👤 ' : ''}${player.name}${player.isCroupier ? ' 🎩' : ''}</div>
+                <div class="player-name">${isMe ? '👤 ' : ''}${player.name}</div>
                 <div class="player-chips">💰 ${player.chips || 0}</div>
                 <div class="player-status-text">${player.folded ? '❌ FOLD' : (isCurrentTurn ? '🎮 Gra' : '⏳ Czeka')}${player.currentBet ? ` (Stawka: ${player.currentBet})` : ''}</div>
             </div>
@@ -522,8 +530,7 @@ function updatePokerPlayersArea(state) {
     
     // Krupier widzi karty wszystkich graczy w zielonym polu
     if (currentRole === 'croupier') {
-        const myPlayer = state.players.find(p => p.id === myPlayerId);
-        myCardsHtml = '<h4>🃏 Karty Wszystkich</h4><div class="all-players-cards">';
+        myCardsHtml = '<h4>🃏 Karty Graczy</h4><div class="all-players-cards">';
         state.players.forEach((player) => {
             if (player.hand && player.hand.length > 0) {
                 const cardsHtml = player.hand.map(card => createCardHTML(card, false, false)).join('');
@@ -537,7 +544,7 @@ function updatePokerPlayersArea(state) {
         });
         myCardsHtml += '</div>';
         
-        // Update croupier chips select
+        // Update croupier chips select - tylko gracze, nie krupier
         const select = document.getElementById('pokerAssignChipsPlayer');
         select.innerHTML = state.players.map(p => 
             `<option value="${p.id}">${p.name}</option>`
@@ -562,15 +569,9 @@ function updatePokerControls(state) {
             !['flop', 'turn', 'river'].includes(state.gamePhase));
         document.getElementById('pokerNextRoundBtn').classList.toggle('hidden', state.gamePhase !== 'finished');
         
-        // Krupier też może stawiać i foldować gdy gra
-        const myPlayer = state.players.find(p => p.id === myPlayerId);
-        if (['flop', 'turn', 'river'].includes(state.gamePhase) && myPlayer && !myPlayer.folded) {
-            bettingControls.classList.remove('hidden');
-            playerControls.classList.remove('hidden');
-        } else {
-            bettingControls.classList.add('hidden');
-            playerControls.classList.add('hidden');
-        }
+        // Krupier NIE obstawia - tylko kontroluje grę
+        bettingControls.classList.add('hidden');
+        playerControls.classList.add('hidden');
     } else {
         croupierControls.classList.add('hidden');
         document.getElementById('pokerCroupierChipsControls').classList.add('hidden');
