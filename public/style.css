@@ -512,32 +512,32 @@ body {
 /* Game Status */
 .game-status {
     text-align: center;
-    padding: 10px;
-    margin-bottom: 10px;
+    padding: 5px;
+    margin-bottom: 5px;
 }
 
 .phase-display {
-    font-size: 1.1rem;
+    font-size: 0.95rem;
     color: #ffd700;
     text-transform: uppercase;
     letter-spacing: 2px;
-    margin-bottom: 5px;
+    margin-bottom: 3px;
 }
 
 .message-display {
     color: rgba(255, 255, 255, 0.8);
-    font-size: 0.95rem;
-    min-height: 20px;
+    font-size: 0.85rem;
+    min-height: 16px;
 }
 
 /* Game Layout - Main + Sidebar */
 .game-layout {
     display: flex;
-    gap: 15px;
+    gap: 10px;
     max-width: 1400px;
     margin: 0 auto;
-    padding: 10px;
-    height: calc(100vh - 100px);
+    padding: 8px;
+    height: calc(100vh - 90px);
     overflow: hidden;
 }
 
@@ -1094,21 +1094,21 @@ body {
 
 .roulette-wheel-area {
     text-align: center;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
 }
 
 .wheel-container {
     position: relative;
     display: inline-block;
-    padding-top: 30px;
+    padding-top: 25px;
 }
 
 .wheel-pointer {
     position: absolute;
-    top: 5px;
+    top: 3px;
     left: 50%;
     transform: translateX(-50%);
-    font-size: 2rem;
+    font-size: 1.5rem;
     color: #ffd700;
     z-index: 10;
     text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
@@ -1116,13 +1116,13 @@ body {
 }
 
 .roulette-wheel {
-    width: 250px;
-    height: 250px;
+    width: 200px;
+    height: 200px;
     border-radius: 50%;
-    border: 8px solid #ffd700;
+    border: 6px solid #ffd700;
     box-shadow: 
-        0 0 20px rgba(255, 215, 0, 0.5),
-        inset 0 0 20px rgba(0, 0, 0, 0.5);
+        0 0 15px rgba(255, 215, 0, 0.5),
+        inset 0 0 15px rgba(0, 0, 0, 0.5);
     transition: transform 5s cubic-bezier(0.17, 0.67, 0.12, 0.99);
     position: relative;
     overflow: hidden;
@@ -1138,19 +1138,19 @@ body {
 
 .wheel-number {
     position: absolute;
-    width: 22px;
-    height: 32px;
+    width: 18px;
+    height: 26px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.6rem;
+    font-size: 0.5rem;
     font-weight: bold;
     color: #fff;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.9);
     left: 50%;
     top: 50%;
-    margin-left: -11px;
-    margin-top: -16px;
+    margin-left: -9px;
+    margin-top: -13px;
     border-radius: 3px 3px 0 0;
 }
 
@@ -1171,15 +1171,15 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 160px;
-    height: 160px;
+    width: 130px;
+    height: 130px;
     border-radius: 50%;
     background: repeating-conic-gradient(
         from 0deg,
         #c62828 0deg 9.73deg,
         #1a1a1a 9.73deg 19.46deg
     );
-    border: 3px solid #8b6914;
+    border: 2px solid #8b6914;
 }
 
 .wheel-inner {
@@ -1187,14 +1187,14 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 60px;
-    height: 60px;
+    width: 50px;
+    height: 50px;
     background: radial-gradient(circle, #2e7d32 0%, #1a472a 70%, #0d3320 100%);
     border-radius: 50%;
-    border: 3px solid #ffd700;
+    border: 2px solid #ffd700;
     box-shadow: 
-        0 0 10px rgba(0, 0, 0, 0.5),
-        inset 0 0 15px rgba(0, 0, 0, 0.3);
+        0 0 8px rgba(0, 0, 0, 0.5),
+        inset 0 0 10px rgba(0, 0, 0, 0.3);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1202,18 +1202,18 @@ body {
 }
 
 .wheel-center {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
     background: radial-gradient(circle, #ffd700 0%, #b8860b 100%);
     border-radius: 50%;
     border: 2px solid #8b6914;
-    box-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+    box-shadow: 0 0 6px rgba(255, 215, 0, 0.5);
 }
 
 .winning-number {
-    font-size: 2rem;
+    font-size: 1.5rem;
     color: #ffd700;
-    margin-top: 10px;
+    margin-top: 5px;
     font-weight: bold;
     text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
 }
@@ -1234,15 +1234,22 @@ body {
 }
 
 .betting-board {
-    margin-bottom: 15px;
+    margin-bottom: 10px;
+}
+
+.betting-hint {
+    text-align: center;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.8rem;
+    margin-bottom: 8px;
 }
 
 .roulette-grid {
     display: grid;
-    grid-template-columns: 40px repeat(12, 1fr);
+    grid-template-columns: 35px repeat(12, 1fr);
     gap: 2px;
-    max-width: 700px;
-    margin: 0 auto 15px;
+    max-width: 600px;
+    margin: 0 auto 10px;
 }
 
 .roulette-grid .zero {
@@ -1253,12 +1260,12 @@ body {
 }
 
 .bet-cell {
-    padding: 10px 6px;
+    padding: 6px 4px;
     text-align: center;
     font-weight: bold;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     cursor: pointer;
-    border-radius: 4px;
+    border-radius: 3px;
     transition: all 0.2s ease;
     border: 2px solid transparent;
 }
@@ -1292,16 +1299,16 @@ body {
 .outside-bets {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
-    gap: 6px;
-    max-width: 700px;
+    gap: 4px;
+    max-width: 600px;
     margin: 0 auto;
 }
 
 .bet-cell.outside {
     background: rgba(255, 255, 255, 0.1);
     color: #fff;
-    padding: 10px;
-    font-size: 0.8rem;
+    padding: 6px;
+    font-size: 0.7rem;
 }
 
 .bet-cell.red-bet {
@@ -1315,28 +1322,28 @@ body {
 .roulette-controls {
     display: flex;
     flex-wrap: wrap;
-    gap: 15px;
+    gap: 10px;
     justify-content: center;
     align-items: flex-start;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
 }
 
 .my-bets {
     background: rgba(0, 0, 0, 0.3);
-    padding: 12px;
-    border-radius: 8px;
-    min-width: 150px;
+    padding: 8px;
+    border-radius: 6px;
+    min-width: 130px;
 }
 
 .my-bets h4 {
     color: #ffd700;
-    margin-bottom: 8px;
-    font-size: 0.9rem;
+    margin-bottom: 5px;
+    font-size: 0.8rem;
 }
 
 .total-bet {
-    margin-top: 10px;
-    font-size: 1rem;
+    margin-top: 8px;
+    font-size: 0.9rem;
     color: #00c853;
     font-weight: bold;
 }
@@ -1347,8 +1354,8 @@ body {
 
 .chip-selector {
     display: flex;
-    gap: 10px;
-    margin-top: 10px;
+    gap: 8px;
+    margin-top: 8px;
 }
 
 .roulette-chip.active {
@@ -1359,14 +1366,14 @@ body {
 .roulette-actions {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
 }
 
 .btn-roulette {
     background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
     color: #fff;
-    padding: 12px 25px;
-    font-size: 1rem;
+    padding: 8px 16px;
+    font-size: 0.85rem;
     border: 2px solid #4caf50;
     text-shadow: 0 1px 2px rgba(0,0,0,0.3);
 }
@@ -1377,44 +1384,45 @@ body {
 }
 
 .btn-roulette.btn-large {
-    padding: 15px 35px;
-    font-size: 1.2rem;
+    padding: 10px 25px;
+    font-size: 1rem;
 }
 
 /* Chips display */
 .my-chips-display {
-    margin-top: 15px;
-    padding: 10px;
+    margin-top: 8px;
+    padding: 6px;
     background: rgba(255, 215, 0, 0.1);
-    border-radius: 8px;
+    border-radius: 6px;
     text-align: center;
+    font-size: 0.8rem;
 }
 
 .chips-amount {
     color: #ffd700;
     font-weight: bold;
-    font-size: 1.3rem;
+    font-size: 1rem;
 }
 
 .bet-chips-input {
-    margin-top: 10px;
+    margin-top: 6px;
 }
 
 .bet-chips-input label {
     display: block;
-    font-size: 0.9rem;
+    font-size: 0.75rem;
     color: rgba(255,255,255,0.8);
-    margin-bottom: 5px;
+    margin-bottom: 3px;
 }
 
 .chips-input {
     width: 100%;
-    padding: 8px 12px;
+    padding: 5px 8px;
     background: rgba(0, 0, 0, 0.5);
     border: 2px solid rgba(255, 215, 0, 0.5);
-    border-radius: 6px;
+    border-radius: 4px;
     color: #ffd700;
-    font-size: 1rem;
+    font-size: 0.9rem;
     text-align: center;
 }
 
@@ -1425,30 +1433,30 @@ body {
 
 /* Croupier chips controls */
 .croupier-chips-controls {
-    margin-top: 20px;
-    padding-top: 15px;
+    margin-top: 15px;
+    padding-top: 10px;
     border-top: 1px solid rgba(255, 215, 0, 0.3);
 }
 
 .croupier-chips-controls h4 {
     color: #ffd700;
-    margin-bottom: 10px;
-    font-size: 0.95rem;
+    margin-bottom: 8px;
+    font-size: 0.85rem;
 }
 
 .assign-chips-form {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
 }
 
 .player-select {
-    padding: 8px;
+    padding: 6px;
     background: rgba(0, 0, 0, 0.5);
     border: 1px solid rgba(255, 215, 0, 0.5);
-    border-radius: 6px;
+    border-radius: 4px;
     color: #fff;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
 }
 
 .player-select:focus {
