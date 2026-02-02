@@ -954,6 +954,74 @@ io.on('connection', (socket) => {
         return null;
     }
     
+    // ========== LEAVE TABLE EVENTS ==========
+    
+    socket.on('leaveBlackjackTable', () => {
+        for (const [tableId, table] of blackjackTables.entries()) {
+            if (table.croupier.id === socket.id) {
+                io.to(tableId).emit('bjTableClosed', { message: 'Krupier opuścił stół.' });
+                blackjackTables.delete(tableId);
+                io.emit('bjTablesUpdated');
+                socket.leave(tableId);
+                return;
+            }
+            const playerIndex = table.players.findIndex(p => p.id === socket.id);
+            if (playerIndex !== -1) {
+                const playerName = table.players[playerIndex].name;
+                table.players.splice(playerIndex, 1);
+                socket.leave(tableId);
+                io.to(tableId).emit('bjTableUpdate', getBJTableState(table));
+                io.to(tableId).emit('bjMessage', { text: `${playerName} opuścił stół.` });
+                io.emit('bjTablesUpdated');
+                return;
+            }
+        }
+    });
+    
+    socket.on('leavePokerTable', () => {
+        for (const [tableId, table] of pokerTables.entries()) {
+            if (table.croupier.id === socket.id) {
+                io.to(tableId).emit('pokerTableClosed', { message: 'Krupier opuścił stół.' });
+                pokerTables.delete(tableId);
+                io.emit('pokerTablesUpdated');
+                socket.leave(tableId);
+                return;
+            }
+            const playerIndex = table.players.findIndex(p => p.id === socket.id);
+            if (playerIndex !== -1) {
+                const playerName = table.players[playerIndex].name;
+                table.players.splice(playerIndex, 1);
+                socket.leave(tableId);
+                io.to(tableId).emit('pokerTableUpdate', getPokerTableState(table));
+                io.to(tableId).emit('pokerMessage', { text: `${playerName} opuścił stół.` });
+                io.emit('pokerTablesUpdated');
+                return;
+            }
+        }
+    });
+    
+    socket.on('leaveRouletteTable', () => {
+        for (const [tableId, table] of rouletteTables.entries()) {
+            if (table.croupier.id === socket.id) {
+                io.to(tableId).emit('rouletteTableClosed', { message: 'Krupier opuścił stół.' });
+                rouletteTables.delete(tableId);
+                io.emit('rouletteTablesUpdated');
+                socket.leave(tableId);
+                return;
+            }
+            const playerIndex = table.players.findIndex(p => p.id === socket.id);
+            if (playerIndex !== -1) {
+                const playerName = table.players[playerIndex].name;
+                table.players.splice(playerIndex, 1);
+                socket.leave(tableId);
+                io.to(tableId).emit('rouletteTableUpdate', getRouletteTableState(table));
+                io.to(tableId).emit('rouletteMessage', { text: `${playerName} opuścił stół.` });
+                io.emit('rouletteTablesUpdated');
+                return;
+            }
+        }
+    });
+    
     // ========== DISCONNECT ==========
     
     socket.on('disconnect', () => {

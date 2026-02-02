@@ -131,7 +131,12 @@ document.getElementById('refreshBlackjackTablesBtn').addEventListener('click', (
 });
 
 document.getElementById('leaveBlackjackTableBtn').addEventListener('click', () => {
-    location.reload();
+    socket.emit('leaveBlackjackTable');
+    currentTableId = null;
+    previousDealerCardCount = 0;
+    previousPlayerCardCounts = {};
+    showScreen('blackjackLobby');
+    socket.emit('getBlackjackTables');
 });
 
 // Blackjack chip buttons
@@ -378,7 +383,10 @@ document.getElementById('refreshPokerTablesBtn').addEventListener('click', () =>
 });
 
 document.getElementById('leavePokerTableBtn').addEventListener('click', () => {
-    location.reload();
+    socket.emit('leavePokerTable');
+    currentTableId = null;
+    showScreen('pokerLobby');
+    socket.emit('getPokerTables');
 });
 
 // Poker controls
@@ -534,7 +542,11 @@ document.getElementById('refreshRouletteTablesBtn').addEventListener('click', ()
 });
 
 document.getElementById('leaveRouletteTableBtn').addEventListener('click', () => {
-    location.reload();
+    socket.emit('leaveRouletteTable');
+    currentTableId = null;
+    rouletteBets = [];
+    showScreen('rouletteLobby');
+    socket.emit('getRouletteTables');
 });
 
 // Roulette chip selection
