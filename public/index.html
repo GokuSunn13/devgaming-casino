@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevGaming Casino - Blackjack</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="legal-disclaimer">
+        <p>⚠️ <strong>INFORMACJA PRAWNA:</strong> DevGaming Casino nie jest prawdziwym kasynem. 
+        Nie można wpłacać ani wypłacać prawdziwej waluty. Wszystkie żetony są wirtualne i nie mają 
+        żadnej wartości pieniężnej. Strona służy wyłącznie celom rozrywkowym i roleplay na serwerze DevGaming.</p>
+    </div>
+    
+    <div class="casino-bg"></div>
+    
+    <!-- Lobby Screen -->
+    <div id="lobby" class="screen active">
+        <div class="lobby-container">
+            <h1 class="casino-title">🎰 DevGaming Casino 🎰</h1>
+            <h2 class="game-title">♠ Blackjack ♥</h2>
+            
+            <div class="name-input-section">
+                <input type="text" id="playerName" placeholder="Enter your name" maxlength="20">
+            </div>
+            
+            <div class="role-buttons">
+                <button id="createTableBtn" class="btn btn-gold">
+                    🎩 Create Table as Croupier
+                </button>
+                <button id="refreshTablesBtn" class="btn btn-silver">
+                    🔄 Refresh Tables
+                </button>
+            </div>
+            
+            <div class="tables-section">
+                <h3>Available Tables</h3>
+                <div id="tablesList" class="tables-list">
+                    <p class="no-tables">No tables available. Create one!</p>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+    
+    <!-- Game Screen -->
+    <div id="game" class="screen">
+        <div class="game-header">
+            <div class="table-info">
+                <span id="tableIdDisplay">Table: ---</span>
+                <span id="roleDisplay">Role: ---</span>
+            </div>
+            <button id="leaveTableBtn" class="btn btn-danger">Leave Table</button>
+        </div>
+        
+        <div class="blackjack-table">
+            <!-- Dealer Area -->
+            <div class="dealer-area">
+                <div class="dealer-label">
+                    <span class="croupier-name">🎩 Croupier: <span id="croupierName">---</span></span>
+                </div>
+                <div class="dealer-cards" id="dealerCards">
+                    <!-- Dealer cards will be inserted here -->
+                </div>
+                <div class="dealer-value">Value: <span id="dealerValue">-</span></div>
+            </div>
+            
+            <!-- Game Status -->
+            <div class="game-status">
+                <div id="gamePhase" class="phase-display">Waiting for players...</div>
+                <div id="gameMessage" class="message-display"></div>
+            </div>
+            
+            <!-- Players Area -->
+            <div class="players-area" id="playersArea">
+                <!-- Player slots will be inserted here -->
+            </div>
+            
+            <!-- Controls Area -->
+            <div class="controls-area">
+                <!-- Croupier Controls -->
+                <div id="croupierControls" class="controls hidden">
+                    <button id="startBettingBtn" class="btn btn-gold">Start Betting Round</button>
+                    <button id="dealCardsBtn" class="btn btn-gold hidden">Deal Cards</button>
+                    <button id="croupierPlayBtn" class="btn btn-gold hidden">Reveal & Play</button>
+                    <button id="newRoundBtn" class="btn btn-gold hidden">New Round</button>
+                </div>
+                
+                <!-- Player Controls -->
+                <div id="playerControls" class="controls hidden">
+                    <!-- Betting Controls -->
+                    <div id="bettingControls" class="betting-controls hidden">
+                        <div class="chips-display">
+                            Chips: <span id="myChips">1000</span>
+                        </div>
+                        <div class="bet-input">
+                            <button class="chip-btn" data-value="10">$10</button>
+                            <button class="chip-btn" data-value="25">$25</button>
+                            <button class="chip-btn" data-value="50">$50</button>
+                            <button class="chip-btn" data-value="100">$100</button>
+                        </div>
+                        <div class="current-bet">
+                            Bet: $<span id="currentBetAmount">0</span>
+                        </div>
+                        <button id="placeBetBtn" class="btn btn-gold">Place Bet</button>
+                    </div>
+                    
+                    <!-- Playing Controls -->
+                    <div id="playingControls" class="playing-controls hidden">
+                        <button id="hitBtn" class="btn btn-green">HIT</button>
+                        <button id="standBtn" class="btn btn-red">STAND</button>
+                        <button id="doubleBtn" class="btn btn-gold">DOUBLE DOWN</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Results Modal -->
+        <div id="resultsModal" class="modal hidden">
+            <div class="modal-content">
+                <h2>🎰 Round Results 🎰</h2>
+                <div id="resultsContent"></div>
+                <button id="closeResultsBtn" class="btn btn-gold">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
