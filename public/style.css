@@ -1312,50 +1312,44 @@ body {
     justify-content: center;
     gap: 8px;
     margin-top: 10px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     max-width: 400px;
     margin-left: auto;
     margin-right: auto;
+    overflow: hidden;
 }
 
 .history-label {
     font-size: 0.8rem;
     color: rgba(255, 255, 255, 0.7);
     margin-right: 5px;
+    white-space: nowrap;
 }
 
 .history-numbers {
     display: flex;
-    gap: 4px;
-    flex-wrap: wrap;
-    justify-content: center;
+    gap: 6px;
+    flex-wrap: nowrap;
+    overflow: hidden;
 }
 
 .history-num {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.7rem;
+    font-size: 0.9rem;
     font-weight: bold;
-    color: #fff;
+    text-shadow: 0 0 8px currentColor;
+    white-space: nowrap;
 }
 
 .history-num.red {
-    background: linear-gradient(145deg, #d32f2f, #b71c1c);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    color: #ff4444;
 }
 
 .history-num.black {
-    background: linear-gradient(145deg, #424242, #212121);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    color: #fff;
 }
 
 .history-num.green {
-    background: linear-gradient(145deg, #388e3c, #1b5e20);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    color: #4caf50;
 }
 
 .betting-board {

@@ -987,9 +987,9 @@ io.on('connection', (socket) => {
         const result = Math.floor(Math.random() * 37);
         table.lastResult = result;
         
-        // Dodaj do historii (max 20 wyników)
+        // Dodaj do historii (max 10 wyników - tyle ile mieści się w linii)
         table.history.unshift(result);
-        if (table.history.length > 20) {
+        if (table.history.length > 10) {
             table.history.pop();
         }
         
