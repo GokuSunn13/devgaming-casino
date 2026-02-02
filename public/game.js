@@ -725,10 +725,11 @@ function initRouletteWheel() {
     const wheelOrder = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
     
     const segmentAngle = 360 / wheelOrder.length;
+    const radius = 130; // odległość numerów od środka
     let html = '';
     
     wheelOrder.forEach((num, index) => {
-        const rotation = index * segmentAngle - 90;
+        const angle = (index * segmentAngle - 90) * (Math.PI / 180);
         let colorClass = 'black';
         if (num === 0) {
             colorClass = 'green';
@@ -736,9 +737,12 @@ function initRouletteWheel() {
             colorClass = 'red';
         }
         
+        // Pozycja numeru na obwodzie koła
+        const rotation = index * segmentAngle;
+        
         html += `
-            <div class="wheel-segment ${colorClass}" style="transform: rotate(${rotation}deg) skewY(${90 - segmentAngle}deg);">
-                <span style="transform: skewY(${-(90 - segmentAngle)}deg) rotate(${segmentAngle/2}deg);">${num}</span>
+            <div class="wheel-number ${colorClass}" style="transform: rotate(${rotation}deg) translateY(-${radius}px);">
+                <span style="transform: rotate(180deg);">${num}</span>
             </div>
         `;
     });
