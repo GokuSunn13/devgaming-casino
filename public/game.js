@@ -239,50 +239,43 @@ function updateBlackjackState(state) {
 }
 
 function updateBJPlayersArea(state) {
-    const maxSlots = 4;
-    let html = '';
+    let listHtml = '';
+    let myCardsHtml = '';
     
     state.players.forEach((player) => {
         const isMe = player.id === myPlayerId;
         const isCurrentTurn = player.isCurrentTurn;
-        const prevCount = previousPlayerCardCounts[player.id] || 0;
-        const newCount = player.hand.length;
         
-        let slotClass = 'player-slot';
-        if (isCurrentTurn) slotClass += ' active-turn';
-        if (isMe) slotClass += ' current-player';
-        if (player.status === 'bust') slotClass += ' bust';
-        if (player.status === 'blackjack') slotClass += ' blackjack';
+        let itemClass = 'player-list-item';
+        if (isCurrentTurn) itemClass += ' active-turn';
+        if (isMe) itemClass += ' current-player';
         
-        cardDealIndex = 0;
-        const cardsHtml = player.hand.map((card, i) => 
-            createCardHTML(card, true, i >= prevCount)
-        ).join('');
-        
-        previousPlayerCardCounts[player.id] = newCount;
-        
-        html += `
-            <div class="${slotClass}">
-                <div class="player-info">
-                    <span class="player-name">${isMe ? '👤 ' : ''}${player.name}</span>
-                    <span class="player-status-badge ${player.status}">${getStatusBadge(player.status)}</span>
-                </div>
-                <div class="player-cards">
-                    ${cardsHtml}
-                </div>
-                <div class="player-value">Wartość: ${player.handValue}</div>
-                ${player.status !== 'waiting' && player.status !== 'ready' && player.status !== 'playing' 
-                    ? `<div class="player-status ${player.status}">${player.status.toUpperCase()}</div>` 
-                    : ''}
+        listHtml += `
+            <div class="${itemClass}">
+                <div class="player-name">${isMe ? '👤 ' : ''}${player.name}</div>
+                <div class="player-status-text">${getStatusBadge(player.status)}</div>
+                <div class="player-hand-value">Wartość: ${player.handValue}</div>
             </div>
         `;
+        
+        if (isMe && player.hand.length > 0) {
+            cardDealIndex = 0;
+            const prevCount = previousPlayerCardCounts[player.id] || 0;
+            const cardsHtml = player.hand.map((card, i) => 
+                createCardHTML(card, false, i >= prevCount)
+            ).join('');
+            previousPlayerCardCounts[player.id] = player.hand.length;
+            
+            myCardsHtml = `
+                <h4>🃏 Twoje Karty</h4>
+                <div class="my-cards">${cardsHtml}</div>
+                <div class="my-hand-value">Wartość: ${player.handValue}</div>
+            `;
+        }
     });
     
-    for (let i = state.players.length; i < maxSlots; i++) {
-        html += `<div class="empty-slot"><span>Puste miejsce ${i + 1}</span></div>`;
-    }
-    
-    document.getElementById('bjPlayersArea').innerHTML = html;
+    document.getElementById('bjPlayersArea').innerHTML = listHtml || '<p class="no-players">Brak graczy</p>';
+    document.getElementById('bjMyCardsArea').innerHTML = myCardsHtml;
 }
 
 function getStatusBadge(status) {
@@ -444,28 +437,36 @@ function updatePokerState(state) {
 }
 
 function updatePokerPlayersArea(state) {
-    let html = '';
+    let listHtml = '';
+    let myCardsHtml = '';
     
     state.players.forEach((player) => {
         const isMe = player.id === myPlayerId;
         const isCurrentTurn = player.isCurrentTurn;
         
-        let slotClass = 'poker-player';
-        if (isCurrentTurn) slotClass += ' active';
-        if (player.folded) slotClass += ' folded';
+        let itemClass = 'player-list-item';
+        if (isCurrentTurn) itemClass += ' active-turn';
+        if (isMe) itemClass += ' current-player';
+        if (player.folded) itemClass += ' folded';
         
-        html += `
-            <div class="${slotClass}">
+        listHtml += `
+            <div class="${itemClass}">
                 <div class="player-name">${isMe ? '👤 ' : ''}${player.name}</div>
-                <div class="player-cards">
-                    ${(isMe || state.gamePhase === 'showdown' ? player.hand : player.hand.map(() => ({value: '?', suit: '?'}))).map(card => createCardHTML(card, true)).join('')}
-                </div>
-                ${player.folded ? '<div class="player-status folded">FOLD</div>' : ''}
+                <div class="player-status-text">${player.folded ? '❌ FOLD' : (isCurrentTurn ? '🎮 Gra' : '⏳ Czeka')}</div>
             </div>
         `;
+        
+        if (isMe && player.hand.length > 0) {
+            const cardsHtml = player.hand.map(card => createCardHTML(card, false)).join('');
+            myCardsHtml = `
+                <h4>🃏 Twoje Karty</h4>
+                <div class="my-cards">${cardsHtml}</div>
+            `;
+        }
     });
     
-    document.getElementById('pokerPlayersArea').innerHTML = html;
+    document.getElementById('pokerPlayersArea').innerHTML = listHtml || '<p class="no-players">Brak graczy</p>';
+    document.getElementById('pokerMyCardsArea').innerHTML = myCardsHtml;
 }
 
 function updatePokerControls(state) {
@@ -520,7 +521,8 @@ document.getElementById('clearRouletteBetsBtn').addEventListener('click', () => 
 
 document.getElementById('confirmRouletteBetsBtn').addEventListener('click', () => {
     if (rouletteBets.length > 0) {
-        socket.emit('rouletteConfirmBets', { bets: rouletteBets });
+        const betAmount = parseInt(document.getElementById('betChipsInput').value) || 10;
+        socket.emit('rouletteConfirmBets', { bets: rouletteBets, betAmount: betAmount });
     } else {
         alert('Wybierz przynajmniej jeden typ!');
     }
@@ -530,6 +532,16 @@ document.getElementById('rouletteSpinBtn').addEventListener('click', () => socke
 document.getElementById('rouletteNewRoundBtn').addEventListener('click', () => socket.emit('rouletteNewRound'));
 document.getElementById('rouletteCloseResultsBtn').addEventListener('click', () => {
     document.getElementById('rouletteResultsModal').classList.add('hidden');
+});
+
+// Assign chips by croupier
+document.getElementById('assignChipsBtn')?.addEventListener('click', () => {
+    const playerId = document.getElementById('assignChipsPlayer').value;
+    const amount = parseInt(document.getElementById('assignChipsAmount').value) || 0;
+    if (playerId && amount >= 0) {
+        socket.emit('rouletteAssignChips', { playerId, amount });
+        document.getElementById('assignChipsAmount').value = '';
+    }
 });
 
 function toggleRouletteBet(betType, cell) {
@@ -662,9 +674,10 @@ socket.on('rouletteResults', (results) => {
     document.getElementById('rouletteResultsContent').innerHTML = results.players.map(p => `
         <div class="result-item ${p.won ? 'win' : 'lose'}">
             <span>${p.name}</span>
-            <span>${p.won ? `✅ WYGRANA! ${p.multiplier}x` : '❌ Przegrana'}</span>
+            <span>${p.won ? `✅ WYGRANA! +${p.winnings} żetonów (${p.multiplier}x)` : '❌ Przegrana'}</span>
         </div>
         ${p.hits && p.hits.length > 0 ? `<div class="hits-detail">Trafione: ${p.hits.join(', ')}</div>` : ''}
+        <div class="new-balance">Stan konta: ${p.newChips} żetonów</div>
     `).join('');
     
     document.getElementById('rouletteResultsModal').classList.remove('hidden');
@@ -694,21 +707,41 @@ function updateRouletteState(state) {
     if (currentRole === 'croupier') {
         document.getElementById('rouletteSpinBtn').classList.toggle('hidden', state.gamePhase !== 'betting');
         document.getElementById('rouletteNewRoundBtn').classList.toggle('hidden', state.gamePhase !== 'finished');
+        document.getElementById('rouletteCroupierChipsControls').classList.remove('hidden');
+        
+        // Update player select for chip assignment
+        const select = document.getElementById('assignChipsPlayer');
+        select.innerHTML = state.players.map(p => 
+            `<option value="${p.id}">${p.name}</option>`
+        ).join('');
+    } else {
+        document.getElementById('rouletteCroupierChipsControls')?.classList.add('hidden');
     }
     
-    // Update players display
-    let html = '';
+    // Update my chips display
+    const myPlayer = state.players.find(p => p.id === myPlayerId);
+    if (myPlayer) {
+        document.getElementById('myChipsAmount').textContent = myPlayer.chips || 0;
+    }
+    
+    // Update players display in sidebar
+    let listHtml = '';
     state.players.forEach(p => {
         const isMe = p.id === myPlayerId;
-        html += `
-            <div class="roulette-player ${isMe ? 'current-player' : ''} ${p.ready ? 'ready' : ''}">
+        let itemClass = 'player-list-item';
+        if (isMe) itemClass += ' current-player';
+        if (p.ready) itemClass += ' ready';
+        
+        listHtml += `
+            <div class="${itemClass}">
                 <div class="player-name">${isMe ? '👤 ' : ''}${p.name}</div>
-                <div class="player-status">${p.ready ? '✅ Gotowy' : '⏳ Wybiera'}</div>
-                ${p.bets && p.bets.length > 0 ? `<div class="player-bets">${p.bets.length} typów</div>` : ''}
+                <div class="player-chips">💰 ${p.chips || 0} żetonów</div>
+                <div class="player-status-text">${p.ready ? '✅ Gotowy' : '⏳ Wybiera'}</div>
+                ${p.bets && p.bets.length > 0 ? `<div class="player-bets-info">${p.bets.length} typów (${p.totalBet || 0} żet.)</div>` : ''}
             </div>
         `;
     });
-    document.getElementById('roulettePlayersArea').innerHTML = html;
+    document.getElementById('roulettePlayersArea').innerHTML = listHtml || '<p class="no-players">Brak graczy</p>';
 }
 
 function isRedNumber(num) {

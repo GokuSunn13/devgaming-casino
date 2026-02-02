@@ -197,7 +197,9 @@ function getRouletteTableState(table) {
             id: p.id,
             name: p.name,
             bets: p.bets,
-            ready: p.ready
+            ready: p.ready,
+            chips: p.chips || 0,
+            totalBet: p.totalBet || 0
         })),
         gamePhase: table.gamePhase,
         lastResult: table.lastResult,
@@ -556,8 +558,8 @@ io.on('connection', (socket) => {
         const table = findPlayerTable(socket.id, pokerTables);
         if (!table || table.croupier.id !== socket.id) return;
         
-        if (table.players.length < 2) {
-            socket.emit('error', { message: 'Potrzeba minimum 2 graczy!' });
+        if (table.players.length < 1) {
+            socket.emit('error', { message: 'Potrzeba minimum 1 gracza!' });
             return;
         }
         
@@ -749,7 +751,9 @@ io.on('connection', (socket) => {
             id: socket.id,
             name: data.name,
             bets: [],
-            ready: false
+            ready: false,
+            chips: 0,
+            totalBet: 0
         });
         
         socket.join(data.tableId);
@@ -771,11 +775,35 @@ io.on('connection', (socket) => {
         const player = table.players.find(p => p.id === socket.id);
         if (!player) return;
         
+        const betAmount = data.betAmount || 10;
+        const totalBet = betAmount * data.bets.length;
+        
+        if (player.chips < totalBet) {
+            socket.emit('error', { message: `Nie masz wystarczająco żetonów! Potrzebujesz ${totalBet}, masz ${player.chips}` });
+            return;
+        }
+        
         player.bets = data.bets;
+        player.betAmount = betAmount;
+        player.totalBet = totalBet;
+        player.chips -= totalBet;
         player.ready = true;
         
         io.to(table.id).emit('rouletteTableUpdate', getRouletteTableState(table));
-        io.to(table.id).emit('rouletteMessage', { text: `${player.name} jest gotowy!` });
+        io.to(table.id).emit('rouletteMessage', { text: `${player.name} postawił ${totalBet} żetonów!` });
+    });
+    
+    socket.on('rouletteAssignChips', (data) => {
+        const table = findPlayerTable(socket.id, rouletteTables);
+        if (!table || table.croupier.id !== socket.id) return;
+        
+        const player = table.players.find(p => p.id === data.playerId);
+        if (!player) return;
+        
+        player.chips = data.amount;
+        
+        io.to(table.id).emit('rouletteTableUpdate', getRouletteTableState(table));
+        io.to(table.id).emit('rouletteMessage', { text: `Krupier przydzielił ${data.amount} żetonów graczowi ${player.name}` });
     });
     
     socket.on('rouletteSpin', () => {
@@ -802,15 +830,26 @@ io.on('connection', (socket) => {
             table.players.forEach(player => {
                 const { won, multiplier, hits } = checkRouletteWin(player.bets, result);
                 
+                let winnings = 0;
+                if (won && player.betAmount) {
+                    // Calculate winnings based on bet amount and multiplier
+                    winnings = player.betAmount * multiplier;
+                    player.chips += winnings;
+                }
+                
                 results.players.push({
                     id: player.id,
                     name: player.name,
                     won,
                     multiplier: won ? `${multiplier}` : null,
-                    hits
+                    hits,
+                    winnings: winnings,
+                    newChips: player.chips
                 });
                 
                 player.bets = [];
+                player.betAmount = 0;
+                player.totalBet = 0;
                 player.ready = false;
             });
             

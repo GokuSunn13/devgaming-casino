@@ -124,39 +124,45 @@
             <button id="leaveBlackjackTableBtn" class="btn btn-danger">Opuść Stół</button>
         </div>
         
-        <div class="blackjack-table">
-            <div class="dealer-area">
-                <div class="dealer-label">
-                    <span class="croupier-name">🎩 Krupier: <span id="bjCroupierName">---</span></span>
-                </div>
-                <div class="dealer-cards" id="bjDealerCards"></div>
-                <div class="dealer-value">Wartość: <span id="bjDealerValue">-</span></div>
-            </div>
-            
-            <div class="game-status">
-                <div id="bjGamePhase" class="phase-display">Oczekiwanie na graczy...</div>
-                <div id="bjGameMessage" class="message-display"></div>
-            </div>
-            
-            <div class="players-area" id="bjPlayersArea"></div>
-            
-            <div class="controls-area">
-                <div id="bjCroupierControls" class="controls hidden">
-                    <button id="bjDealCardsBtn" class="btn btn-gold">🃏 Rozdaj Karty</button>
-                    <button id="bjCroupierPlayBtn" class="btn btn-gold hidden">Odkryj & Graj</button>
-                    <button id="bjNewRoundBtn" class="btn btn-gold hidden">Nowa Runda</button>
+        <div class="blackjack-table game-layout">
+            <div class="game-main">
+                <div class="dealer-area">
+                    <div class="dealer-label">
+                        <span class="croupier-name">🎩 Krupier: <span id="bjCroupierName">---</span></span>
+                    </div>
+                    <div class="dealer-cards" id="bjDealerCards"></div>
+                    <div class="dealer-value">Wartość: <span id="bjDealerValue">-</span></div>
                 </div>
                 
-                <div id="bjPlayerControls" class="controls hidden">
-                    <div id="bjReadyControls" class="ready-controls hidden">
-                        <button id="bjReadyBtn" class="btn btn-gold btn-large">✅ Gotowy do gry!</button>
+                <div class="game-status">
+                    <div id="bjGamePhase" class="phase-display">Oczekiwanie na graczy...</div>
+                    <div id="bjGameMessage" class="message-display"></div>
+                </div>
+                
+                <div class="my-cards-area" id="bjMyCardsArea"></div>
+            
+                <div class="controls-area">
+                    <div id="bjCroupierControls" class="controls hidden">
+                        <button id="bjDealCardsBtn" class="btn btn-gold">🃏 Rozdaj Karty</button>
+                        <button id="bjCroupierPlayBtn" class="btn btn-gold hidden">Odkryj & Graj</button>
+                        <button id="bjNewRoundBtn" class="btn btn-gold hidden">Nowa Runda</button>
                     </div>
                     
-                    <div id="bjPlayingControls" class="playing-controls hidden">
-                        <button id="bjHitBtn" class="btn btn-green">DOBIERZ</button>
-                        <button id="bjStandBtn" class="btn btn-red">STÓJ</button>
+                    <div id="bjPlayerControls" class="controls hidden">
+                        <div id="bjReadyControls" class="ready-controls hidden">
+                            <button id="bjReadyBtn" class="btn btn-gold btn-large">✅ Gotowy do gry!</button>
+                        </div>
+                        
+                        <div id="bjPlayingControls" class="playing-controls hidden">
+                            <button id="bjHitBtn" class="btn btn-green">DOBIERZ</button>
+                            <button id="bjStandBtn" class="btn btn-red">STÓJ</button>
+                        </div>
                     </div>
                 </div>
+            </div>
+            <div class="players-sidebar">
+                <h4>👥 Gracze</h4>
+                <div class="players-list" id="bjPlayersArea"></div>
             </div>
         </div>
         
@@ -214,30 +220,36 @@
             <button id="leavePokerTableBtn" class="btn btn-danger">Opuść Stół</button>
         </div>
         
-        <div class="poker-table">
-            <div class="community-cards-area">
-                <h3>Karty Wspólne</h3>
-                <div class="community-cards" id="communityCards"></div>
-            </div>
-            
-            <div class="game-status">
-                <div id="pokerGamePhase" class="phase-display">Oczekiwanie na graczy...</div>
-                <div id="pokerGameMessage" class="message-display"></div>
-            </div>
-            
-            <div class="poker-players-area" id="pokerPlayersArea"></div>
-            
-            <div class="controls-area">
-                <div id="pokerCroupierControls" class="controls hidden">
-                    <button id="pokerStartGameBtn" class="btn btn-gold">🃏 Rozpocznij Grę</button>
-                    <button id="pokerNextPhaseBtn" class="btn btn-gold hidden">Następna Faza</button>
-                    <button id="pokerNextRoundBtn" class="btn btn-gold hidden">Nowa Runda</button>
+        <div class="poker-table game-layout">
+            <div class="game-main">
+                <div class="community-cards-area">
+                    <h3>Karty Wspólne</h3>
+                    <div class="community-cards" id="communityCards"></div>
                 </div>
                 
-                <div id="pokerPlayerControls" class="controls hidden">
-                    <button id="pokerFoldBtn" class="btn btn-red">FOLD</button>
-                    <button id="pokerCheckBtn" class="btn btn-green">CHECK (Gram dalej)</button>
+                <div class="game-status">
+                    <div id="pokerGamePhase" class="phase-display">Oczekiwanie na graczy...</div>
+                    <div id="pokerGameMessage" class="message-display"></div>
                 </div>
+                
+                <div class="my-cards-area" id="pokerMyCardsArea"></div>
+            
+                <div class="controls-area">
+                    <div id="pokerCroupierControls" class="controls hidden">
+                        <button id="pokerStartGameBtn" class="btn btn-gold">🃏 Rozpocznij Grę</button>
+                        <button id="pokerNextPhaseBtn" class="btn btn-gold hidden">Następna Faza</button>
+                        <button id="pokerNextRoundBtn" class="btn btn-gold hidden">Nowa Runda</button>
+                    </div>
+                    
+                    <div id="pokerPlayerControls" class="controls hidden">
+                        <button id="pokerFoldBtn" class="btn btn-red">FOLD</button>
+                        <button id="pokerCheckBtn" class="btn btn-green">CHECK (Gram dalej)</button>
+                    </div>
+                </div>
+            </div>
+            <div class="players-sidebar">
+                <h4>👥 Gracze</h4>
+                <div class="players-list" id="pokerPlayersArea"></div>
             </div>
         </div>
         
@@ -295,7 +307,8 @@
             <button id="leaveRouletteTableBtn" class="btn btn-danger">Opuść Stół</button>
         </div>
         
-        <div class="roulette-table">
+        <div class="roulette-table game-layout">
+            <div class="game-main">
             <div class="roulette-wheel-area">
                 <div class="wheel-container">
                     <div class="wheel-pointer">▼</div>
@@ -375,20 +388,39 @@
                 <div class="my-bets">
                     <h4>Twoje Typy</h4>
                     <div id="myRouletteBets"><p class="no-bets">Wybierz pola na planszy</p></div>
+                    <div class="my-chips-display">
+                        <span>Twoje żetony: </span>
+                        <span id="myChipsAmount" class="chips-amount">0</span>
+                    </div>
+                    <div class="bet-chips-input">
+                        <label>Stawka na każdy typ:</label>
+                        <input type="number" id="betChipsInput" min="1" value="10" class="chips-input">
+                    </div>
                 </div>
                 
                 <div class="roulette-actions">
-                    <button id="clearRouletteBetsBtn" class="btn btn-silver">Wyczyść Typy</button>
-                    <button id="confirmRouletteBetsBtn" class="btn btn-gold">✅ Gotowy!</button>
+                    <button id="clearRouletteBetsBtn" class="btn btn-roulette">🗑️ Wyczyść</button>
+                    <button id="confirmRouletteBetsBtn" class="btn btn-roulette">✅ Gotowy!</button>
                 </div>
                 
                 <div id="rouletteCroupierControls" class="controls hidden">
-                    <button id="rouletteSpinBtn" class="btn btn-gold btn-large">🎡 KRĘĆ KOŁEM!</button>
-                    <button id="rouletteNewRoundBtn" class="btn btn-gold hidden">Nowa Runda</button>
+                    <button id="rouletteSpinBtn" class="btn btn-roulette btn-large">🎡 KRĘĆ KOŁEM!</button>
+                    <button id="rouletteNewRoundBtn" class="btn btn-roulette hidden">Nowa Runda</button>
                 </div>
             </div>
-            
-            <div class="roulette-players" id="roulettePlayersArea"></div>
+            </div>
+            <div class="players-sidebar">
+                <h4>👥 Gracze</h4>
+                <div class="players-list" id="roulettePlayersArea"></div>
+                <div id="rouletteCroupierChipsControls" class="croupier-chips-controls hidden">
+                    <h4>💰 Przydziel żetony</h4>
+                    <div class="assign-chips-form">
+                        <select id="assignChipsPlayer" class="player-select"></select>
+                        <input type="number" id="assignChipsAmount" placeholder="Ilość" min="0" class="chips-input">
+                        <button id="assignChipsBtn" class="btn btn-roulette">Przydziel</button>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <div id="rouletteResultsModal" class="results-overlay hidden">
