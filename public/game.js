@@ -822,6 +822,9 @@ function updateRouletteState(state) {
     document.getElementById('rouletteGamePhase').textContent = formatRoulettePhase(state.gamePhase);
     document.getElementById('winningNumber').textContent = state.lastResult !== null ? state.lastResult : '-';
     
+    // Update history display
+    updateRouletteHistory(state.history || []);
+    
     if (currentRole === 'croupier') {
         // Przycisk kręcenia widoczny gdy faza betting
         document.getElementById('rouletteSpinBtn').classList.toggle('hidden', state.gamePhase !== 'betting');
@@ -867,6 +870,19 @@ function updateRouletteState(state) {
 function isRedNumber(num) {
     const redNumbers = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
     return redNumbers.includes(num);
+}
+
+function updateRouletteHistory(history) {
+    const historyEl = document.getElementById('rouletteHistory');
+    if (!historyEl) return;
+    
+    historyEl.innerHTML = history.map(num => {
+        let colorClass = 'green';
+        if (num > 0) {
+            colorClass = isRedNumber(num) ? 'red' : 'black';
+        }
+        return `<span class="history-num ${colorClass}">${num}</span>`;
+    }).join('');
 }
 
 // Inicjalizacja koła ruletki z numerami

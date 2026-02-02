@@ -208,7 +208,8 @@ function createRouletteTable(croupierId, croupierName) {
         croupier: { id: croupierId, name: croupierName },
         players: [],
         gamePhase: 'betting',
-        lastResult: null
+        lastResult: null,
+        history: [] // Historia wylosowanych numerów
     };
     rouletteTables.set(tableId, table);
     return table;
@@ -228,6 +229,7 @@ function getRouletteTableState(table) {
         })),
         gamePhase: table.gamePhase,
         lastResult: table.lastResult,
+        history: table.history || [],
         playerCount: table.players.length
     };
 }
@@ -984,6 +986,12 @@ io.on('connection', (socket) => {
         
         const result = Math.floor(Math.random() * 37);
         table.lastResult = result;
+        
+        // Dodaj do historii (max 20 wyników)
+        table.history.unshift(result);
+        if (table.history.length > 20) {
+            table.history.pop();
+        }
         
         const rotation = 1800 + Math.random() * 720 + (result * (360 / 37));
         
