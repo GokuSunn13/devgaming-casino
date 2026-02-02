@@ -14,6 +14,8 @@ let myPlayerId = null;
 
 // Blackjack state
 let bjCurrentBet = 0;
+let previousDealerCardCount = 0;
+let previousPlayerCardCounts = {};
 
 // Roulette state
 let rouletteBets = [];
@@ -33,13 +35,6 @@ const exitCasinoBtn = document.getElementById('exitCasinoBtn');
 const playerNicknameInput = document.getElementById('playerNickname');
 const entryStakeInput = document.getElementById('entryStake');
 
-// Stake buttons
-document.querySelectorAll('.stake-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        entryStakeInput.value = btn.dataset.value;
-    });
-});
-
 enterCasinoBtn.addEventListener('click', () => {
     const nickname = playerNicknameInput.value.trim();
     const stake = parseInt(entryStakeInput.value);
@@ -49,8 +44,13 @@ enterCasinoBtn.addEventListener('click', () => {
         return;
     }
     
-    if (!stake || stake < 100) {
-        alert('Minimalna stawka wejściowa to $100!');
+    if (!stake || stake < 10) {
+        alert('Minimalna stawka wejściowa to $10!');
+        return;
+    }
+    
+    if (stake > 1000000) {
+        alert('Maksymalna stawka wejściowa to $1,000,000!');
         return;
     }
     
@@ -149,10 +149,20 @@ document.getElementById('bjPlaceBetBtn').addEventListener('click', () => {
 });
 
 // Croupier controls
-document.getElementById('bjStartBettingBtn').addEventListener('click', () => socket.emit('bjStartBetting'));
+document.getElementById('bjStartBettingBtn').addEventListener('click', () => {
+    // Reset card counters for new round
+    previousDealerCardCount = 0;
+    previousPlayerCardCounts = {};
+    socket.emit('bjStartBetting');
+});
 document.getElementById('bjDealCardsBtn').addEventListener('click', () => socket.emit('bjDealCards'));
 document.getElementById('bjCroupierPlayBtn').addEventListener('click', () => socket.emit('bjCroupierPlay'));
-document.getElementById('bjNewRoundBtn').addEventListener('click', () => socket.emit('bjStartBetting'));
+document.getElementById('bjNewRoundBtn').addEventListener('click', () => {
+    // Reset card counters for new round
+    previousDealerCardCount = 0;
+    previousPlayerCardCounts = {};
+    socket.emit('bjStartBetting');
+});
 
 // Player controls
 document.getElementById('bjHitBtn').addEventListener('click', () => socket.emit('bjHit'));
@@ -257,7 +267,20 @@ socket.on('bjTablesUpdated', () => {
 
 function updateBlackjackState(state) {
     document.getElementById('bjCroupierName').textContent = state.croupier?.name || '---';
-    document.getElementById('bjDealerCards').innerHTML = state.dealerHand.map(card => createCardHTML(card)).join('');
+    
+    // Animuj karty krupiera jeśli są nowe
+    const dealerCardsEl = document.getElementById('bjDealerCards');
+    const newDealerCount = state.dealerHand.length;
+    if (newDealerCount > previousDealerCardCount) {
+        cardDealIndex = 0;
+        dealerCardsEl.innerHTML = state.dealerHand.map((card, i) => 
+            createCardHTML(card, false, i >= previousDealerCardCount)
+        ).join('');
+    } else {
+        dealerCardsEl.innerHTML = state.dealerHand.map(card => createCardHTML(card)).join('');
+    }
+    previousDealerCardCount = newDealerCount;
+    
     document.getElementById('bjDealerValue').textContent = state.dealerHandValue;
     document.getElementById('bjGamePhase').textContent = formatPhase(state.gamePhase);
     
@@ -272,12 +295,22 @@ function updateBJPlayersArea(state) {
     state.players.forEach((player) => {
         const isMe = player.id === myPlayerId;
         const isCurrentTurn = player.isCurrentTurn;
+        const prevCount = previousPlayerCardCounts[player.id] || 0;
+        const newCount = player.hand.length;
         
         let slotClass = 'player-slot';
         if (isCurrentTurn) slotClass += ' active-turn';
         if (isMe) slotClass += ' current-player';
         if (player.status === 'bust') slotClass += ' bust';
         if (player.status === 'blackjack') slotClass += ' blackjack';
+        
+        // Generuj karty z animacją dla nowych
+        cardDealIndex = 0;
+        const cardsHtml = player.hand.map((card, i) => 
+            createCardHTML(card, true, i >= prevCount)
+        ).join('');
+        
+        previousPlayerCardCounts[player.id] = newCount;
         
         html += `
             <div class="${slotClass}">
@@ -287,7 +320,7 @@ function updateBJPlayersArea(state) {
                 </div>
                 <div class="player-bet">Zakład: $${player.bet}</div>
                 <div class="player-cards">
-                    ${player.hand.map(card => createCardHTML(card, true)).join('')}
+                    ${cardsHtml}
                 </div>
                 <div class="player-value">Wartość: ${player.handValue}</div>
                 ${player.status !== 'waiting' && player.status !== 'betting' && player.status !== 'ready' && player.status !== 'playing' 
@@ -710,20 +743,32 @@ function isRedNumber(num) {
 
 // ==================== HELPER FUNCTIONS ====================
 
-function createCardHTML(card, small = false) {
+let cardDealIndex = 0;
+
+function createCardHTML(card, small = false, animate = false) {
     if (!card || card.value === '?') {
-        return '<div class="card hidden-card">?</div>';
+        const animClass = animate ? ' dealing' : '';
+        const delay = animate ? ` style="animation-delay: ${cardDealIndex++ * 0.15}s"` : '';
+        return `<div class="card hidden-card${animClass}"${delay}>?</div>`;
     }
     
     const isRed = card.suit === '♥' || card.suit === '♦';
     const colorClass = isRed ? 'red' : 'black';
+    const animClass = animate ? ' dealing' : '';
+    const delay = animate ? ` style="animation-delay: ${cardDealIndex++ * 0.15}s"` : '';
     
     return `
-        <div class="card ${colorClass}">
+        <div class="card ${colorClass}${animClass}"${delay}>
             <span class="value">${card.value}</span>
             <span class="suit">${card.suit}</span>
         </div>
     `;
+}
+
+function createCardsWithAnimation(cards, containerId) {
+    cardDealIndex = 0;
+    const container = document.getElementById(containerId);
+    container.innerHTML = cards.map(card => createCardHTML(card, false, true)).join('');
 }
 
 function formatPhase(phase) {
