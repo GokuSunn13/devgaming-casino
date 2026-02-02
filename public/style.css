@@ -627,28 +627,55 @@ body {
     margin-top: 2px;
 }
 
-/* Player cards preview for croupier */
-.player-cards-preview {
+/* All players cards display for croupier */
+.all-players-cards {
     display: flex;
-    gap: 4px;
-    margin-top: 6px;
-    justify-content: center;
     flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+    padding: 10px 0;
 }
 
-.player-cards-preview .card {
-    width: 35px;
-    height: 50px;
-    font-size: 0.65rem;
+.player-hand-display {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    padding: 8px 12px;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    min-width: 120px;
+}
+
+.player-hand-display.folded {
+    opacity: 0.5;
+    border-color: rgba(255, 100, 100, 0.3);
+}
+
+.player-hand-name {
+    font-size: 0.85rem;
+    color: #ffd700;
+    text-align: center;
+    margin-bottom: 6px;
+    font-weight: bold;
+}
+
+.player-hand-cards {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+}
+
+.player-hand-cards .card {
+    width: 40px;
+    height: 56px;
+    font-size: 0.7rem;
     border-radius: 4px;
 }
 
-.player-cards-preview .card .card-corner {
-    font-size: 0.55rem;
+.player-hand-cards .card .card-corner {
+    font-size: 0.6rem;
 }
 
-.player-cards-preview .card .card-center {
-    font-size: 1rem;
+.player-hand-cards .card .card-center {
+    font-size: 1.1rem;
 }
 
 /* My Cards Area */

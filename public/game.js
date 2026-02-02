@@ -115,6 +115,7 @@ document.getElementById('bjDealCardsBtn').addEventListener('click', () => {
     socket.emit('bjDealCards');
 });
 document.getElementById('bjCroupierPlayBtn').addEventListener('click', () => socket.emit('bjCroupierPlay'));
+document.getElementById('bjRevealCardBtn').addEventListener('click', () => socket.emit('bjRevealNextCard'));
 document.getElementById('bjNewRoundBtn').addEventListener('click', () => {
     previousDealerCardCount = 0;
     previousPlayerCardCounts = {};
@@ -260,19 +261,12 @@ function updateBJPlayersArea(state) {
         if (isCurrentTurn) itemClass += ' active-turn';
         if (isMe) itemClass += ' current-player';
         
-        // Krupier widzi karty wszystkich graczy
-        let playerCardsHtml = '';
-        if (currentRole === 'croupier' && player.hand && player.hand.length > 0) {
-            playerCardsHtml = `<div class="player-cards-preview">${player.hand.map(card => createCardHTML(card, false, false)).join('')}</div>`;
-        }
-        
         listHtml += `
             <div class="${itemClass}">
                 <div class="player-name">${isMe ? '👤 ' : ''}${player.name}</div>
                 <div class="player-chips">💰 ${player.chips || 0}</div>
                 <div class="player-status-text">${getStatusBadge(player.status)}${player.currentBet ? ` (${player.currentBet})` : ''}</div>
                 <div class="player-hand-value">Wartość: ${player.handValue}</div>
-                ${playerCardsHtml}
             </div>
         `;
         
@@ -296,8 +290,23 @@ function updateBJPlayersArea(state) {
         }
     });
     
-    // Update croupier chips select
+    // Krupier widzi karty wszystkich graczy w zielonym polu
     if (currentRole === 'croupier') {
+        myCardsHtml = '<h4>🃏 Karty Graczy</h4><div class="all-players-cards">';
+        state.players.forEach((player) => {
+            if (player.hand && player.hand.length > 0) {
+                const cardsHtml = player.hand.map(card => createCardHTML(card, false, false)).join('');
+                myCardsHtml += `
+                    <div class="player-hand-display">
+                        <div class="player-hand-name">${player.name} (${player.handValue})</div>
+                        <div class="player-hand-cards">${cardsHtml}</div>
+                    </div>
+                `;
+            }
+        });
+        myCardsHtml += '</div>';
+        
+        // Update croupier chips select
         const select = document.getElementById('bjAssignChipsPlayer');
         select.innerHTML = state.players.map(p => 
             `<option value="${p.id}">${p.name}</option>`
@@ -332,6 +341,8 @@ function updateBJControls(state) {
             state.gamePhase !== 'waiting' || !hasReadyPlayers);
         document.getElementById('bjCroupierPlayBtn').classList.toggle('hidden', 
             state.gamePhase !== 'playing' || !allPlayersFinished);
+        document.getElementById('bjRevealCardBtn').classList.toggle('hidden', 
+            state.gamePhase !== 'revealing' || !state.canRevealMore);
         document.getElementById('bjNewRoundBtn').classList.toggle('hidden', 
             state.gamePhase !== 'finished');
     } else {
@@ -485,18 +496,11 @@ function updatePokerPlayersArea(state) {
         if (isMe) itemClass += ' current-player';
         if (player.folded) itemClass += ' folded';
         
-        // Krupier widzi karty wszystkich graczy
-        let playerCardsHtml = '';
-        if (currentRole === 'croupier' && player.hand && player.hand.length > 0) {
-            playerCardsHtml = `<div class="player-cards-preview">${player.hand.map(card => createCardHTML(card, false, false)).join('')}</div>`;
-        }
-        
         listHtml += `
             <div class="${itemClass}">
                 <div class="player-name">${isMe ? '👤 ' : ''}${player.name}</div>
                 <div class="player-chips">💰 ${player.chips || 0}</div>
                 <div class="player-status-text">${player.folded ? '❌ FOLD' : (isCurrentTurn ? '🎮 Gra' : '⏳ Czeka')}${player.currentBet ? ` (${player.currentBet})` : ''}</div>
-                ${playerCardsHtml}
             </div>
         `;
         
@@ -511,8 +515,23 @@ function updatePokerPlayersArea(state) {
         }
     });
     
-    // Update croupier chips select
+    // Krupier widzi karty wszystkich graczy w zielonym polu
     if (currentRole === 'croupier') {
+        myCardsHtml = '<h4>🃏 Karty Graczy</h4><div class="all-players-cards">';
+        state.players.forEach((player) => {
+            if (player.hand && player.hand.length > 0) {
+                const cardsHtml = player.hand.map(card => createCardHTML(card, false, false)).join('');
+                myCardsHtml += `
+                    <div class="player-hand-display ${player.folded ? 'folded' : ''}">
+                        <div class="player-hand-name">${player.name}${player.folded ? ' (FOLD)' : ''}</div>
+                        <div class="player-hand-cards">${cardsHtml}</div>
+                    </div>
+                `;
+            }
+        });
+        myCardsHtml += '</div>';
+        
+        // Update croupier chips select
         const select = document.getElementById('pokerAssignChipsPlayer');
         select.innerHTML = state.players.map(p => 
             `<option value="${p.id}">${p.name}</option>`
@@ -890,6 +909,7 @@ function formatPhase(phase) {
     const phases = {
         'waiting': '⏳ Oczekiwanie',
         'playing': '🎮 Gra w toku',
+        'revealing': '🎴 Odkrywanie kart',
         'croupierTurn': '🎩 Tura Krupiera',
         'finished': '🏆 Zakończone'
     };

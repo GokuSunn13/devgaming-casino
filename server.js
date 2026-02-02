@@ -81,6 +81,23 @@ function createBlackjackTable(croupierId, croupierName) {
 }
 
 function getBJTableState(table) {
+    // Determine how many dealer cards to show
+    let visibleDealerCards = [];
+    if (table.gamePhase === 'croupierTurn' || table.gamePhase === 'finished') {
+        visibleDealerCards = table.dealerHand;
+    } else if (table.gamePhase === 'revealing') {
+        // Show cards up to revealIndex
+        const revealIndex = table.dealerRevealIndex || 0;
+        visibleDealerCards = table.dealerHand.slice(0, revealIndex);
+        // Add hidden cards for remaining
+        for (let i = revealIndex; i < table.dealerHand.length; i++) {
+            visibleDealerCards.push({ value: '?', suit: '?' });
+        }
+    } else {
+        // Normal gameplay - show first card, hide second
+        visibleDealerCards = table.dealerHand.slice(0, 1).concat(table.dealerHand.length > 1 ? [{ value: '?', suit: '?' }] : []);
+    }
+    
     return {
         id: table.id,
         croupier: table.croupier,
@@ -95,14 +112,13 @@ function getBJTableState(table) {
             isCurrentTurn: table.currentPlayerIndex !== -1 && 
                           table.players[table.currentPlayerIndex]?.id === p.id
         })),
-        dealerHand: table.gamePhase === 'croupierTurn' || table.gamePhase === 'finished'
-            ? table.dealerHand
-            : table.dealerHand.slice(0, 1).concat(table.dealerHand.length > 1 ? [{ value: '?', suit: '?' }] : []),
-        dealerHandValue: table.gamePhase === 'croupierTurn' || table.gamePhase === 'finished'
+        dealerHand: visibleDealerCards,
+        dealerHandValue: (table.gamePhase === 'croupierTurn' || table.gamePhase === 'finished')
             ? calculateHandValue(table.dealerHand)
-            : '?',
+            : (table.gamePhase === 'revealing' ? calculateHandValue(table.dealerHand.slice(0, table.dealerRevealIndex || 0)) : '?'),
         gamePhase: table.gamePhase,
-        playerCount: table.players.length
+        playerCount: table.players.length,
+        canRevealMore: table.gamePhase === 'revealing' && (table.dealerRevealIndex || 0) < table.dealerHand.length
     };
 }
 
@@ -423,67 +439,92 @@ io.on('connection', (socket) => {
             return;
         }
         
-        table.gamePhase = 'croupierTurn';
+        // Switch to revealing phase - dealer draws cards but shows them one by one
+        table.gamePhase = 'revealing';
+        table.dealerRevealIndex = 1; // Start with first card already visible
         
         // Dealer draws until 17
         while (calculateHandValue(table.dealerHand) < 17) {
             table.dealerHand.push(table.deck.pop());
         }
         
-        const dealerValue = calculateHandValue(table.dealerHand);
-        const dealerBust = dealerValue > 21;
-        
-        // Calculate results
-        const results = {
-            dealerValue,
-            dealerBust,
-            players: []
-        };
-        
-        activePlayers.forEach(player => {
-            const playerValue = calculateHandValue(player.hand);
-            let result = 'lose';
-            let multiplier = 0;
-            let winnings = 0;
-            
-            if (player.status === 'blackjack') {
-                result = 'blackjack';
-                multiplier = 2.5; // 1.5x profit + original bet back
-            } else if (player.status === 'bust') {
-                result = 'lose';
-                multiplier = 0;
-            } else if (dealerBust) {
-                result = 'win';
-                multiplier = 2; // 1x profit + original bet back
-            } else if (playerValue > dealerValue) {
-                result = 'win';
-                multiplier = 2;
-            } else if (playerValue === dealerValue) {
-                result = 'push';
-                multiplier = 1; // Just return original bet
-            }
-            
-            // Calculate and add winnings
-            if (multiplier > 0 && player.currentBet) {
-                winnings = Math.floor(player.currentBet * multiplier);
-                player.chips = (player.chips || 0) + winnings;
-            }
-            
-            results.players.push({
-                id: player.id,
-                name: player.name,
-                result,
-                multiplier: multiplier > 0 ? multiplier : null,
-                bet: player.currentBet || 0,
-                winnings: winnings,
-                newChips: player.chips || 0
-            });
-        });
-        
-        table.gamePhase = 'finished';
-        
         io.to(table.id).emit('bjTableUpdate', getBJTableState(table));
-        io.to(table.id).emit('bjRoundResults', results);
+        io.to(table.id).emit('bjMessage', { text: 'Krupier odkrywa karty... Kliknij "Odkryj kartę" aby odkryć następną.' });
+    });
+    
+    socket.on('bjRevealNextCard', () => {
+        const table = findPlayerTable(socket.id, blackjackTables);
+        if (!table || table.croupier.id !== socket.id) return;
+        if (table.gamePhase !== 'revealing') return;
+        
+        table.dealerRevealIndex = (table.dealerRevealIndex || 1) + 1;
+        
+        // Check if all cards revealed
+        if (table.dealerRevealIndex >= table.dealerHand.length) {
+            // All cards revealed - proceed to finish
+            table.gamePhase = 'croupierTurn';
+            
+            const dealerValue = calculateHandValue(table.dealerHand);
+            const dealerBust = dealerValue > 21;
+            
+            // Calculate results
+            const results = {
+                dealerValue,
+                dealerBust,
+                players: []
+            };
+            
+            const activePlayers = table.players.filter(p => 
+                p.status === 'stand' || p.status === 'bust' || p.status === 'blackjack'
+            );
+            
+            activePlayers.forEach(player => {
+                const playerValue = calculateHandValue(player.hand);
+                let result = 'lose';
+                let multiplier = 0;
+                let winnings = 0;
+                
+                if (player.status === 'blackjack') {
+                    result = 'blackjack';
+                    multiplier = 2.5;
+                } else if (player.status === 'bust') {
+                    result = 'lose';
+                    multiplier = 0;
+                } else if (dealerBust) {
+                    result = 'win';
+                    multiplier = 2;
+                } else if (playerValue > dealerValue) {
+                    result = 'win';
+                    multiplier = 2;
+                } else if (playerValue === dealerValue) {
+                    result = 'push';
+                    multiplier = 1;
+                }
+                
+                if (multiplier > 0 && player.currentBet) {
+                    winnings = Math.floor(player.currentBet * multiplier);
+                    player.chips = (player.chips || 0) + winnings;
+                }
+                
+                results.players.push({
+                    id: player.id,
+                    name: player.name,
+                    result,
+                    multiplier: multiplier > 0 ? multiplier : null,
+                    bet: player.currentBet || 0,
+                    winnings: winnings,
+                    newChips: player.chips || 0
+                });
+            });
+            
+            table.gamePhase = 'finished';
+            
+            io.to(table.id).emit('bjTableUpdate', getBJTableState(table));
+            io.to(table.id).emit('bjRoundResults', results);
+        } else {
+            io.to(table.id).emit('bjTableUpdate', getBJTableState(table));
+            io.to(table.id).emit('bjMessage', { text: `Krupier odkrywa kartę ${table.dealerRevealIndex}/${table.dealerHand.length}...` });
+        }
     });
     
     socket.on('bjNewRound', () => {
@@ -492,6 +533,7 @@ io.on('connection', (socket) => {
         
         table.gamePhase = 'waiting';
         table.dealerHand = [];
+        table.dealerRevealIndex = 0;
         table.currentPlayerIndex = -1;
         table.players.forEach(p => {
             p.hand = [];
