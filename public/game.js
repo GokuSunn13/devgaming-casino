@@ -635,6 +635,9 @@ socket.on('rouletteMessage', (data) => {
     document.getElementById('rouletteGameMessage').textContent = data.text;
 });
 
+// Track wheel rotation
+let currentWheelRotation = 0;
+
 socket.on('rouletteSpin', (data) => {
     const wheel = document.getElementById('rouletteWheel');
     
@@ -646,11 +649,13 @@ socket.on('rouletteSpin', (data) => {
     const winningIndex = wheelOrder.indexOf(data.result);
     // Oblicz kąt, aby wygrany numer był pod wskaźnikiem (u góry)
     const targetAngle = -(winningIndex * segmentAngle) - segmentAngle / 2;
-    // Dodaj kilka pełnych obrotów dla efektu
-    const totalRotation = 1800 + targetAngle + (Math.random() * 10 - 5);
+    
+    // Dodaj pełne obroty (5-8 obrotów) do aktualnej pozycji
+    const extraSpins = (5 + Math.floor(Math.random() * 3)) * 360;
+    currentWheelRotation += extraSpins + targetAngle - (currentWheelRotation % 360);
     
     wheel.style.transition = 'transform 5s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
-    wheel.style.transform = `rotate(${totalRotation}deg)`;
+    wheel.style.transform = `rotate(${currentWheelRotation}deg)`;
     
     setTimeout(() => {
         document.getElementById('winningNumber').textContent = data.result;
@@ -705,8 +710,10 @@ function updateRouletteState(state) {
     document.getElementById('winningNumber').textContent = state.lastResult !== null ? state.lastResult : '-';
     
     if (currentRole === 'croupier') {
+        // Przycisk kręcenia widoczny gdy faza betting
         document.getElementById('rouletteSpinBtn').classList.toggle('hidden', state.gamePhase !== 'betting');
-        document.getElementById('rouletteNewRoundBtn').classList.toggle('hidden', state.gamePhase !== 'finished');
+        // Przycisk nowej rundy już niepotrzebny - zawsze ukryty
+        document.getElementById('rouletteNewRoundBtn').classList.add('hidden');
         document.getElementById('rouletteCroupierChipsControls').classList.remove('hidden');
         
         // Update player select for chip assignment

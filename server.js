@@ -853,10 +853,12 @@ io.on('connection', (socket) => {
                 player.ready = false;
             });
             
-            table.gamePhase = 'finished';
+            // Automatycznie wróć do betting - nie trzeba nowej rundy
+            table.gamePhase = 'betting';
             
             io.to(table.id).emit('rouletteResults', results);
             io.to(table.id).emit('rouletteTableUpdate', getRouletteTableState(table));
+            io.to(table.id).emit('rouletteMessage', { text: 'Możecie stawiać ponownie!' });
         }, 5000);
     });
     
