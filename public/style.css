@@ -627,6 +627,30 @@ body {
     margin-top: 2px;
 }
 
+/* Player cards preview for croupier */
+.player-cards-preview {
+    display: flex;
+    gap: 4px;
+    margin-top: 6px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.player-cards-preview .card {
+    width: 35px;
+    height: 50px;
+    font-size: 0.65rem;
+    border-radius: 4px;
+}
+
+.player-cards-preview .card .card-corner {
+    font-size: 0.55rem;
+}
+
+.player-cards-preview .card .card-center {
+    font-size: 1rem;
+}
+
 /* My Cards Area */
 .my-cards-area {
     background: rgba(0, 100, 0, 0.2);

@@ -260,12 +260,19 @@ function updateBJPlayersArea(state) {
         if (isCurrentTurn) itemClass += ' active-turn';
         if (isMe) itemClass += ' current-player';
         
+        // Krupier widzi karty wszystkich graczy
+        let playerCardsHtml = '';
+        if (currentRole === 'croupier' && player.hand && player.hand.length > 0) {
+            playerCardsHtml = `<div class="player-cards-preview">${player.hand.map(card => createCardHTML(card, false, false)).join('')}</div>`;
+        }
+        
         listHtml += `
             <div class="${itemClass}">
                 <div class="player-name">${isMe ? '👤 ' : ''}${player.name}</div>
                 <div class="player-chips">💰 ${player.chips || 0}</div>
                 <div class="player-status-text">${getStatusBadge(player.status)}${player.currentBet ? ` (${player.currentBet})` : ''}</div>
                 <div class="player-hand-value">Wartość: ${player.handValue}</div>
+                ${playerCardsHtml}
             </div>
         `;
         
@@ -478,11 +485,18 @@ function updatePokerPlayersArea(state) {
         if (isMe) itemClass += ' current-player';
         if (player.folded) itemClass += ' folded';
         
+        // Krupier widzi karty wszystkich graczy
+        let playerCardsHtml = '';
+        if (currentRole === 'croupier' && player.hand && player.hand.length > 0) {
+            playerCardsHtml = `<div class="player-cards-preview">${player.hand.map(card => createCardHTML(card, false, false)).join('')}</div>`;
+        }
+        
         listHtml += `
             <div class="${itemClass}">
                 <div class="player-name">${isMe ? '👤 ' : ''}${player.name}</div>
                 <div class="player-chips">💰 ${player.chips || 0}</div>
                 <div class="player-status-text">${player.folded ? '❌ FOLD' : (isCurrentTurn ? '🎮 Gra' : '⏳ Czeka')}${player.currentBet ? ` (${player.currentBet})` : ''}</div>
+                ${playerCardsHtml}
             </div>
         `;
         
