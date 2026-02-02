@@ -429,7 +429,11 @@ socket.on('pokerTablesUpdated', () => {
 });
 
 function updatePokerState(state) {
-    document.getElementById('communityCards').innerHTML = state.communityCards.map(card => createCardHTML(card)).join('');
+    // Animowane karty wspólne
+    cardDealIndex = 0;
+    document.getElementById('communityCards').innerHTML = state.communityCards.map((card, i) => 
+        createCardHTML(card, false, true)
+    ).join('');
     document.getElementById('pokerGamePhase').textContent = formatPokerPhase(state.gamePhase);
     
     updatePokerPlayersArea(state);
@@ -456,8 +460,10 @@ function updatePokerPlayersArea(state) {
             </div>
         `;
         
-        if (isMe && player.hand.length > 0) {
-            const cardsHtml = player.hand.map(card => createCardHTML(card, false)).join('');
+        // Zawsze pokaż karty gracza jeśli jest to on i ma karty
+        if (isMe && player.hand && player.hand.length > 0) {
+            cardDealIndex = 0;
+            const cardsHtml = player.hand.map((card, i) => createCardHTML(card, false, true)).join('');
             myCardsHtml = `
                 <h4>🃏 Twoje Karty</h4>
                 <div class="my-cards">${cardsHtml}</div>
@@ -470,19 +476,25 @@ function updatePokerPlayersArea(state) {
 }
 
 function updatePokerControls(state) {
+    const croupierControls = document.getElementById('pokerCroupierControls');
+    const playerControls = document.getElementById('pokerPlayerControls');
+    
     if (currentRole === 'croupier') {
+        croupierControls.classList.remove('hidden');
+        playerControls.classList.add('hidden');
+        
         document.getElementById('pokerStartGameBtn').classList.toggle('hidden', state.gamePhase !== 'waiting');
         document.getElementById('pokerNextPhaseBtn').classList.toggle('hidden', 
             !['preflop', 'flop', 'turn', 'river'].includes(state.gamePhase));
         document.getElementById('pokerNextRoundBtn').classList.toggle('hidden', state.gamePhase !== 'finished');
     } else {
+        croupierControls.classList.add('hidden');
         const myPlayer = state.players.find(p => p.id === myPlayerId);
-        const controls = document.getElementById('pokerPlayerControls');
         
         if (myPlayer?.isCurrentTurn && ['preflop', 'flop', 'turn', 'river'].includes(state.gamePhase)) {
-            controls.classList.remove('hidden');
+            playerControls.classList.remove('hidden');
         } else {
-            controls.classList.add('hidden');
+            playerControls.classList.add('hidden');
         }
     }
 }
