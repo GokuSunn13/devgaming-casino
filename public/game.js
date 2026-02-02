@@ -18,6 +18,79 @@ let previousPlayerCardCounts = {};
 // Roulette state
 let rouletteBets = [];
 
+// ==================== SOUND SYSTEM ====================
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+
+function initAudio() {
+    if (!audioCtx) {
+        audioCtx = new AudioContext();
+    }
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+}
+
+function playSound(type) {
+    initAudio();
+    if (!audioCtx) return;
+    
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    
+    switch(type) {
+        case 'card':
+            // Krótki dźwięk rozkładania karty
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.1);
+            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            oscillator.start(audioCtx.currentTime);
+            oscillator.stop(audioCtx.currentTime + 0.1);
+            break;
+            
+        case 'bet':
+            // Dźwięk żetonu/zakładu
+            oscillator.type = 'triangle';
+            oscillator.frequency.setValueAtTime(1200, audioCtx.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.15);
+            gainNode.gain.setValueAtTime(0.25, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+            oscillator.start(audioCtx.currentTime);
+            oscillator.stop(audioCtx.currentTime + 0.15);
+            break;
+            
+        case 'spin':
+            // Dźwięk kręcenia ruletki
+            oscillator.type = 'sawtooth';
+            oscillator.frequency.setValueAtTime(200, audioCtx.currentTime);
+            oscillator.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 0.5);
+            oscillator.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 3);
+            gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.5);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 3);
+            oscillator.start(audioCtx.currentTime);
+            oscillator.stop(audioCtx.currentTime + 3);
+            break;
+            
+        case 'win':
+            // Dźwięk wygranej
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(523, audioCtx.currentTime);
+            oscillator.frequency.setValueAtTime(659, audioCtx.currentTime + 0.1);
+            oscillator.frequency.setValueAtTime(784, audioCtx.currentTime + 0.2);
+            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+            oscillator.start(audioCtx.currentTime);
+            oscillator.stop(audioCtx.currentTime + 0.4);
+            break;
+    }
+}
+
 // Initialize
 socket.on('connect', () => {
     myPlayerId = socket.id;
@@ -112,10 +185,17 @@ document.getElementById('leaveBlackjackTableBtn').addEventListener('click', () =
 document.getElementById('bjDealCardsBtn').addEventListener('click', () => {
     previousDealerCardCount = 0;
     previousPlayerCardCounts = {};
+    playSound('card');
     socket.emit('bjDealCards');
 });
-document.getElementById('bjCroupierPlayBtn').addEventListener('click', () => socket.emit('bjCroupierPlay'));
-document.getElementById('bjRevealCardBtn').addEventListener('click', () => socket.emit('bjRevealNextCard'));
+document.getElementById('bjCroupierPlayBtn').addEventListener('click', () => {
+    playSound('card');
+    socket.emit('bjCroupierPlay');
+});
+document.getElementById('bjRevealCardBtn').addEventListener('click', () => {
+    playSound('card');
+    socket.emit('bjRevealNextCard');
+});
 document.getElementById('bjNewRoundBtn').addEventListener('click', () => {
     previousDealerCardCount = 0;
     previousPlayerCardCounts = {};
@@ -125,9 +205,13 @@ document.getElementById('bjNewRoundBtn').addEventListener('click', () => {
 // Player controls
 document.getElementById('bjPlaceBetBtn').addEventListener('click', () => {
     const amount = parseInt(document.getElementById('bjBetInput').value) || 0;
+    playSound('bet');
     socket.emit('bjPlaceBet', { amount });
 });
-document.getElementById('bjHitBtn').addEventListener('click', () => socket.emit('bjHit'));
+document.getElementById('bjHitBtn').addEventListener('click', () => {
+    playSound('card');
+    socket.emit('bjHit');
+});
 document.getElementById('bjStandBtn').addEventListener('click', () => socket.emit('bjStand'));
 
 // Croupier chips assignment
@@ -380,8 +464,14 @@ document.getElementById('leavePokerTableBtn').addEventListener('click', () => {
 });
 
 // Poker controls
-document.getElementById('pokerStartGameBtn').addEventListener('click', () => socket.emit('pokerStartGame'));
-document.getElementById('pokerNextPhaseBtn').addEventListener('click', () => socket.emit('pokerNextPhase'));
+document.getElementById('pokerStartGameBtn').addEventListener('click', () => {
+    playSound('card');
+    socket.emit('pokerStartGame');
+});
+document.getElementById('pokerNextPhaseBtn').addEventListener('click', () => {
+    playSound('card');
+    socket.emit('pokerNextPhase');
+});
 document.getElementById('pokerNextRoundBtn').addEventListener('click', () => socket.emit('pokerNextRound'));
 document.getElementById('pokerFoldBtn').addEventListener('click', () => socket.emit('pokerFold'));
 document.getElementById('pokerCheckBtn').addEventListener('click', () => socket.emit('pokerCheck'));
@@ -597,6 +687,7 @@ document.getElementById('pokerAssignChipsBtn').addEventListener('click', () => {
 // Poker betting
 document.getElementById('pokerPlaceBetBtn').addEventListener('click', () => {
     const amount = parseInt(document.getElementById('pokerBetInput').value) || 0;
+    playSound('bet');
     socket.emit('pokerPlaceBet', { amount });
 });
 
@@ -635,13 +726,17 @@ document.getElementById('clearRouletteBetsBtn').addEventListener('click', () => 
 document.getElementById('confirmRouletteBetsBtn').addEventListener('click', () => {
     if (rouletteBets.length > 0) {
         const betAmount = parseInt(document.getElementById('betChipsInput').value) || 10;
+        playSound('bet');
         socket.emit('rouletteConfirmBets', { bets: rouletteBets, betAmount: betAmount });
     } else {
         alert('Wybierz przynajmniej jeden typ!');
     }
 });
 
-document.getElementById('rouletteSpinBtn').addEventListener('click', () => socket.emit('rouletteSpin'));
+document.getElementById('rouletteSpinBtn').addEventListener('click', () => {
+    playSound('spin');
+    socket.emit('rouletteSpin');
+});
 document.getElementById('rouletteNewRoundBtn').addEventListener('click', () => socket.emit('rouletteNewRound'));
 document.getElementById('rouletteCloseResultsBtn').addEventListener('click', () => {
     document.getElementById('rouletteResultsModal').classList.add('hidden');
