@@ -298,11 +298,15 @@
         <div class="roulette-table">
             <div class="roulette-wheel-area">
                 <div class="wheel-container">
+                    <div class="wheel-pointer">▼</div>
                     <div class="roulette-wheel" id="rouletteWheel">
-                        <div class="wheel-inner"></div>
+                        <div class="wheel-numbers" id="wheelNumbers"></div>
+                        <div class="wheel-inner">
+                            <div class="wheel-center"></div>
+                        </div>
                     </div>
-                    <div class="winning-number" id="winningNumber">-</div>
                 </div>
+                <div class="winning-number" id="winningNumber">-</div>
             </div>
             
             <div class="game-status">
@@ -313,43 +317,47 @@
             <div class="betting-board">
                 <p class="betting-hint">Kliknij aby wybrać na co stawiasz (można wybrać wiele)</p>
                 <div class="roulette-grid" id="rouletteGrid">
-                    <div class="bet-cell zero" data-bet="0">0 (35x)</div>
-                    <div class="bet-cell red" data-bet="1">1</div>
-                    <div class="bet-cell black" data-bet="2">2</div>
+                    <!-- Zero po lewej stronie -->
+                    <div class="bet-cell zero" data-bet="0">0<br>(35x)</div>
+                    <!-- Wiersz 3: 3,6,9,12,15,18,21,24,27,30,33,36 -->
                     <div class="bet-cell red" data-bet="3">3</div>
-                    <div class="bet-cell black" data-bet="4">4</div>
-                    <div class="bet-cell red" data-bet="5">5</div>
                     <div class="bet-cell black" data-bet="6">6</div>
-                    <div class="bet-cell red" data-bet="7">7</div>
-                    <div class="bet-cell black" data-bet="8">8</div>
                     <div class="bet-cell red" data-bet="9">9</div>
-                    <div class="bet-cell black" data-bet="10">10</div>
-                    <div class="bet-cell black" data-bet="11">11</div>
                     <div class="bet-cell red" data-bet="12">12</div>
-                    <div class="bet-cell black" data-bet="13">13</div>
-                    <div class="bet-cell red" data-bet="14">14</div>
                     <div class="bet-cell black" data-bet="15">15</div>
-                    <div class="bet-cell red" data-bet="16">16</div>
-                    <div class="bet-cell black" data-bet="17">17</div>
                     <div class="bet-cell red" data-bet="18">18</div>
-                    <div class="bet-cell red" data-bet="19">19</div>
-                    <div class="bet-cell black" data-bet="20">20</div>
                     <div class="bet-cell red" data-bet="21">21</div>
-                    <div class="bet-cell black" data-bet="22">22</div>
-                    <div class="bet-cell red" data-bet="23">23</div>
                     <div class="bet-cell black" data-bet="24">24</div>
-                    <div class="bet-cell red" data-bet="25">25</div>
-                    <div class="bet-cell black" data-bet="26">26</div>
                     <div class="bet-cell red" data-bet="27">27</div>
-                    <div class="bet-cell black" data-bet="28">28</div>
-                    <div class="bet-cell black" data-bet="29">29</div>
                     <div class="bet-cell red" data-bet="30">30</div>
-                    <div class="bet-cell black" data-bet="31">31</div>
-                    <div class="bet-cell red" data-bet="32">32</div>
                     <div class="bet-cell black" data-bet="33">33</div>
-                    <div class="bet-cell red" data-bet="34">34</div>
-                    <div class="bet-cell black" data-bet="35">35</div>
                     <div class="bet-cell red" data-bet="36">36</div>
+                    <!-- Wiersz 2: 2,5,8,11,14,17,20,23,26,29,32,35 -->
+                    <div class="bet-cell black" data-bet="2">2</div>
+                    <div class="bet-cell red" data-bet="5">5</div>
+                    <div class="bet-cell black" data-bet="8">8</div>
+                    <div class="bet-cell black" data-bet="11">11</div>
+                    <div class="bet-cell red" data-bet="14">14</div>
+                    <div class="bet-cell black" data-bet="17">17</div>
+                    <div class="bet-cell black" data-bet="20">20</div>
+                    <div class="bet-cell red" data-bet="23">23</div>
+                    <div class="bet-cell black" data-bet="26">26</div>
+                    <div class="bet-cell black" data-bet="29">29</div>
+                    <div class="bet-cell red" data-bet="32">32</div>
+                    <div class="bet-cell black" data-bet="35">35</div>
+                    <!-- Wiersz 1: 1,4,7,10,13,16,19,22,25,28,31,34 -->
+                    <div class="bet-cell red" data-bet="1">1</div>
+                    <div class="bet-cell black" data-bet="4">4</div>
+                    <div class="bet-cell red" data-bet="7">7</div>
+                    <div class="bet-cell black" data-bet="10">10</div>
+                    <div class="bet-cell black" data-bet="13">13</div>
+                    <div class="bet-cell red" data-bet="16">16</div>
+                    <div class="bet-cell red" data-bet="19">19</div>
+                    <div class="bet-cell black" data-bet="22">22</div>
+                    <div class="bet-cell red" data-bet="25">25</div>
+                    <div class="bet-cell black" data-bet="28">28</div>
+                    <div class="bet-cell black" data-bet="31">31</div>
+                    <div class="bet-cell red" data-bet="34">34</div>
                 </div>
                 
                 <div class="outside-bets">

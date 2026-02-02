@@ -625,13 +625,32 @@ socket.on('rouletteMessage', (data) => {
 
 socket.on('rouletteSpin', (data) => {
     const wheel = document.getElementById('rouletteWheel');
-    wheel.classList.add('spinning');
-    wheel.style.transform = `rotate(${data.rotation}deg)`;
+    
+    // Europejska kolejność numerów
+    const wheelOrder = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
+    const segmentAngle = 360 / wheelOrder.length;
+    
+    // Znajdź indeks wygranego numeru
+    const winningIndex = wheelOrder.indexOf(data.result);
+    // Oblicz kąt, aby wygrany numer był pod wskaźnikiem (u góry)
+    const targetAngle = -(winningIndex * segmentAngle) - segmentAngle / 2;
+    // Dodaj kilka pełnych obrotów dla efektu
+    const totalRotation = 1800 + targetAngle + (Math.random() * 10 - 5);
+    
+    wheel.style.transition = 'transform 5s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
+    wheel.style.transform = `rotate(${totalRotation}deg)`;
     
     setTimeout(() => {
         document.getElementById('winningNumber').textContent = data.result;
-        wheel.classList.remove('spinning');
-    }, 4000);
+        document.getElementById('winningNumber').className = 'winning-number';
+        if (data.result === 0) {
+            document.getElementById('winningNumber').classList.add('green-win');
+        } else if (isRedNumber(data.result)) {
+            document.getElementById('winningNumber').classList.add('red-win');
+        } else {
+            document.getElementById('winningNumber').classList.add('black-win');
+        }
+    }, 5000);
 });
 
 socket.on('rouletteResults', (results) => {
@@ -696,6 +715,39 @@ function isRedNumber(num) {
     const redNumbers = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
     return redNumbers.includes(num);
 }
+
+// Inicjalizacja koła ruletki z numerami
+function initRouletteWheel() {
+    const wheelNumbers = document.getElementById('wheelNumbers');
+    if (!wheelNumbers) return;
+    
+    // Europejska kolejność numerów na kole ruletki
+    const wheelOrder = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
+    
+    const segmentAngle = 360 / wheelOrder.length;
+    let html = '';
+    
+    wheelOrder.forEach((num, index) => {
+        const rotation = index * segmentAngle - 90;
+        let colorClass = 'black';
+        if (num === 0) {
+            colorClass = 'green';
+        } else if (isRedNumber(num)) {
+            colorClass = 'red';
+        }
+        
+        html += `
+            <div class="wheel-segment ${colorClass}" style="transform: rotate(${rotation}deg) skewY(${90 - segmentAngle}deg);">
+                <span style="transform: skewY(${-(90 - segmentAngle)}deg) rotate(${segmentAngle/2}deg);">${num}</span>
+            </div>
+        `;
+    });
+    
+    wheelNumbers.innerHTML = html;
+}
+
+// Wywołaj po załadowaniu strony
+document.addEventListener('DOMContentLoaded', initRouletteWheel);
 
 // ==================== HELPER FUNCTIONS ====================
 

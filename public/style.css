@@ -946,35 +946,76 @@ body {
 .wheel-container {
     position: relative;
     display: inline-block;
+    padding-top: 30px;
+}
+
+.wheel-pointer {
+    position: absolute;
+    top: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 2rem;
+    color: #ffd700;
+    z-index: 10;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
 }
 
 .roulette-wheel {
-    width: 200px;
-    height: 200px;
+    width: 280px;
+    height: 280px;
     border-radius: 50%;
-    background: conic-gradient(
-        #d32f2f 0deg 10deg, #1a1a2e 10deg 20deg,
-        #d32f2f 20deg 30deg, #1a1a2e 30deg 40deg,
-        #d32f2f 40deg 50deg, #1a1a2e 50deg 60deg,
-        #d32f2f 60deg 70deg, #1a1a2e 70deg 80deg,
-        #d32f2f 80deg 90deg, #1a1a2e 90deg 100deg,
-        #d32f2f 100deg 110deg, #1a1a2e 110deg 120deg,
-        #d32f2f 120deg 130deg, #1a1a2e 130deg 140deg,
-        #d32f2f 140deg 150deg, #1a1a2e 150deg 160deg,
-        #d32f2f 160deg 170deg, #1a1a2e 170deg 180deg,
-        #d32f2f 180deg 190deg, #1a1a2e 190deg 200deg,
-        #d32f2f 200deg 210deg, #1a1a2e 210deg 220deg,
-        #d32f2f 220deg 230deg, #1a1a2e 230deg 240deg,
-        #d32f2f 240deg 250deg, #1a1a2e 250deg 260deg,
-        #d32f2f 260deg 270deg, #1a1a2e 270deg 280deg,
-        #d32f2f 280deg 290deg, #1a1a2e 290deg 300deg,
-        #d32f2f 300deg 310deg, #1a1a2e 310deg 320deg,
-        #d32f2f 320deg 330deg, #1a1a2e 330deg 340deg,
-        #d32f2f 340deg 350deg, #1a1a2e 350deg 360deg
-    );
-    border: 10px solid #ffd700;
-    box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
-    transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+    background: #1a472a;
+    border: 12px solid #ffd700;
+    box-shadow: 
+        0 0 30px rgba(255, 215, 0, 0.5),
+        inset 0 0 50px rgba(0, 0, 0, 0.5);
+    transition: transform 5s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+    position: relative;
+    overflow: hidden;
+}
+
+.wheel-numbers {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+}
+
+.wheel-segment {
+    position: absolute;
+    width: 50%;
+    height: 50%;
+    left: 50%;
+    top: 0;
+    transform-origin: 0% 100%;
+    clip-path: polygon(0% 100%, 100% 0%, 0% 0%);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 8px;
+}
+
+.wheel-segment span {
+    font-size: 0.65rem;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    transform: rotate(85deg);
+    display: block;
+}
+
+.wheel-segment.red {
+    background: linear-gradient(to bottom, #c62828 0%, #b71c1c 100%);
+}
+
+.wheel-segment.black {
+    background: linear-gradient(to bottom, #212121 0%, #000 100%);
+}
+
+.wheel-segment.green {
+    background: linear-gradient(to bottom, #2e7d32 0%, #1b5e20 100%);
 }
 
 .roulette-wheel.spinning {
@@ -986,11 +1027,26 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 60px;
-    height: 60px;
-    background: #0a5c36;
+    width: 100px;
+    height: 100px;
+    background: radial-gradient(circle, #2e7d32 0%, #1a472a 70%, #0d3320 100%);
     border-radius: 50%;
-    border: 3px solid #ffd700;
+    border: 4px solid #ffd700;
+    box-shadow: 
+        0 0 15px rgba(0, 0, 0, 0.5),
+        inset 0 0 20px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wheel-center {
+    width: 30px;
+    height: 30px;
+    background: radial-gradient(circle, #ffd700 0%, #b8860b 100%);
+    border-radius: 50%;
+    border: 2px solid #8b6914;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
 }
 
 .winning-number {
@@ -998,6 +1054,22 @@ body {
     color: #ffd700;
     margin-top: 20px;
     font-weight: bold;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.winning-number.red-win {
+    color: #ff4444;
+    text-shadow: 0 0 15px rgba(255, 68, 68, 0.8);
+}
+
+.winning-number.black-win {
+    color: #fff;
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+}
+
+.winning-number.green-win {
+    color: #4caf50;
+    text-shadow: 0 0 15px rgba(76, 175, 80, 0.8);
 }
 
 .betting-board {
@@ -1006,10 +1078,17 @@ body {
 
 .roulette-grid {
     display: grid;
-    grid-template-columns: repeat(13, 1fr);
+    grid-template-columns: 50px repeat(12, 1fr);
     gap: 3px;
     max-width: 800px;
     margin: 0 auto 20px;
+}
+
+.roulette-grid .zero {
+    grid-row: span 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .bet-cell {
@@ -1190,7 +1269,11 @@ body {
     }
     
     .roulette-grid {
-        grid-template-columns: repeat(7, 1fr);
+        grid-template-columns: 35px repeat(6, 1fr);
+    }
+    
+    .roulette-grid .zero {
+        grid-row: span 6;
     }
     
     .outside-bets {
