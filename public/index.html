@@ -149,8 +149,16 @@
                     </div>
                     
                     <div id="bjPlayerControls" class="controls hidden">
-                        <div id="bjReadyControls" class="ready-controls hidden">
-                            <button id="bjReadyBtn" class="btn btn-gold btn-large">✅ Gotowy do gry!</button>
+                        <div id="bjBettingControls" class="betting-controls hidden">
+                            <div class="my-chips-display">
+                                <span>Twoje żetony: </span>
+                                <span id="bjMyChips" class="chips-amount">0</span>
+                            </div>
+                            <div class="bet-chips-input">
+                                <label>Stawka:</label>
+                                <input type="number" id="bjBetInput" min="1" value="10" class="chips-input">
+                            </div>
+                            <button id="bjPlaceBetBtn" class="btn btn-gold">✅ Postaw i Gotowy!</button>
                         </div>
                         
                         <div id="bjPlayingControls" class="playing-controls hidden">
@@ -163,6 +171,14 @@
             <div class="players-sidebar">
                 <h4>👥 Gracze</h4>
                 <div class="players-list" id="bjPlayersArea"></div>
+                <div id="bjCroupierChipsControls" class="croupier-chips-controls hidden">
+                    <h4>💰 Przydziel żetony</h4>
+                    <div class="assign-chips-form">
+                        <select id="bjAssignChipsPlayer" class="player-select"></select>
+                        <input type="number" id="bjAssignChipsAmount" placeholder="Ilość" min="0" class="chips-input">
+                        <button id="bjAssignChipsBtn" class="btn btn-roulette">Przydziel</button>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -256,6 +272,14 @@
             <div class="players-sidebar">
                 <h4>👥 Gracze</h4>
                 <div class="players-list" id="pokerPlayersArea"></div>
+                <div id="pokerCroupierChipsControls" class="croupier-chips-controls hidden">
+                    <h4>💰 Przydziel żetony</h4>
+                    <div class="assign-chips-form">
+                        <select id="pokerAssignChipsPlayer" class="player-select"></select>
+                        <input type="number" id="pokerAssignChipsAmount" placeholder="Ilość" min="0" class="chips-input">
+                        <button id="pokerAssignChipsBtn" class="btn btn-roulette">Przydziel</button>
+                    </div>
+                </div>
             </div>
         </div>
         

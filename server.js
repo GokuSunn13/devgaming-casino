@@ -90,6 +90,8 @@ function getBJTableState(table) {
             hand: p.hand,
             handValue: calculateHandValue(p.hand),
             status: p.status,
+            chips: p.chips || 0,
+            currentBet: p.currentBet || 0,
             isCurrentTurn: table.currentPlayerIndex !== -1 && 
                           table.players[table.currentPlayerIndex]?.id === p.id
         })),
@@ -130,11 +132,14 @@ function getPokerTableState(table) {
             name: p.name,
             hand: p.hand,
             folded: p.folded,
+            chips: p.chips || 0,
+            currentBet: p.currentBet || 0,
             isCurrentTurn: table.currentPlayerIndex !== -1 && 
                           table.players[table.currentPlayerIndex]?.id === p.id
         })),
         communityCards: table.communityCards,
         gamePhase: table.gamePhase,
+        pot: table.pot || 0,
         playerCount: table.players.length
     };
 }
@@ -439,27 +444,39 @@ io.on('connection', (socket) => {
             const playerValue = calculateHandValue(player.hand);
             let result = 'lose';
             let multiplier = 0;
+            let winnings = 0;
             
             if (player.status === 'blackjack') {
                 result = 'blackjack';
-                multiplier = 1.5;
+                multiplier = 2.5; // 1.5x profit + original bet back
             } else if (player.status === 'bust') {
                 result = 'lose';
+                multiplier = 0;
             } else if (dealerBust) {
                 result = 'win';
-                multiplier = 1;
+                multiplier = 2; // 1x profit + original bet back
             } else if (playerValue > dealerValue) {
                 result = 'win';
-                multiplier = 1;
+                multiplier = 2;
             } else if (playerValue === dealerValue) {
                 result = 'push';
+                multiplier = 1; // Just return original bet
+            }
+            
+            // Calculate and add winnings
+            if (multiplier > 0 && player.currentBet) {
+                winnings = Math.floor(player.currentBet * multiplier);
+                player.chips = (player.chips || 0) + winnings;
             }
             
             results.players.push({
                 id: player.id,
                 name: player.name,
                 result,
-                multiplier: multiplier > 0 ? multiplier : null
+                multiplier: multiplier > 0 ? multiplier : null,
+                bet: player.currentBet || 0,
+                winnings: winnings,
+                newChips: player.chips || 0
             });
         });
         
@@ -479,10 +496,45 @@ io.on('connection', (socket) => {
         table.players.forEach(p => {
             p.hand = [];
             p.status = 'waiting';
+            p.currentBet = 0;
         });
         
         io.to(table.id).emit('bjTableUpdate', getBJTableState(table));
         io.to(table.id).emit('bjMessage', { text: 'Nowa runda! Gracze, kliknijcie "Gotowy".' });
+    });
+    
+    socket.on('bjAssignChips', (data) => {
+        const table = findPlayerTable(socket.id, blackjackTables);
+        if (!table || table.croupier.id !== socket.id) return;
+        
+        const player = table.players.find(p => p.id === data.playerId);
+        if (!player) return;
+        
+        player.chips = data.amount;
+        
+        io.to(table.id).emit('bjTableUpdate', getBJTableState(table));
+        io.to(table.id).emit('bjMessage', { text: `Krupier przydzielił ${data.amount} żetonów graczowi ${player.name}` });
+    });
+    
+    socket.on('bjPlaceBet', (data) => {
+        const table = findPlayerTable(socket.id, blackjackTables);
+        if (!table || table.gamePhase !== 'waiting') return;
+        
+        const player = table.players.find(p => p.id === socket.id);
+        if (!player) return;
+        
+        const betAmount = parseInt(data.amount) || 0;
+        if (betAmount <= 0 || betAmount > (player.chips || 0)) {
+            socket.emit('error', { message: 'Nieprawidłowa stawka!' });
+            return;
+        }
+        
+        player.currentBet = betAmount;
+        player.chips -= betAmount;
+        player.status = 'ready';
+        
+        io.to(table.id).emit('bjTableUpdate', getBJTableState(table));
+        io.to(table.id).emit('bjMessage', { text: `${player.name} postawił ${betAmount} żetonów!` });
     });
     
     function advanceBJTurn(table) {
@@ -570,10 +622,12 @@ io.on('connection', (socket) => {
         table.deck = createDeck();
         table.communityCards = [];
         table.gamePhase = 'preflop';
+        table.pot = 0;
         
         table.players.forEach(p => {
             p.hand = [];
             p.folded = false;
+            p.currentBet = 0;
         });
         
         // Deal 2 cards to each player
@@ -693,16 +747,22 @@ io.on('connection', (socket) => {
     function endPokerRound(table, winner, handName = 'Zwycięzca przez fold') {
         table.gamePhase = 'finished';
         
+        // Give pot to winner
+        const potWinnings = table.pot || 0;
+        winner.chips = (winner.chips || 0) + potWinnings;
+        
         io.to(table.id).emit('pokerTableUpdate', getPokerTableState(table));
         io.to(table.id).emit('pokerRoundResult', {
             winner: {
                 id: winner.id,
                 name: winner.name,
                 hand: winner.hand,
-                handName: handName
+                handName: handName,
+                winnings: potWinnings,
+                newChips: winner.chips
             }
         });
-        io.to(table.id).emit('pokerMessage', { text: `🏆 ${winner.name} wygrywa z: ${handName}!` });
+        io.to(table.id).emit('pokerMessage', { text: `🏆 ${winner.name} wygrywa ${potWinnings} żetonów z: ${handName}!` });
     }
     
     socket.on('pokerNextRound', () => {
@@ -710,6 +770,40 @@ io.on('connection', (socket) => {
         if (!table || table.croupier.id !== socket.id || table.gamePhase !== 'finished') return;
         
         startPokerRound(table);
+    });
+    
+    socket.on('pokerAssignChips', (data) => {
+        const table = findPlayerTable(socket.id, pokerTables);
+        if (!table || table.croupier.id !== socket.id) return;
+        
+        const player = table.players.find(p => p.id === data.playerId);
+        if (!player) return;
+        
+        player.chips = data.amount;
+        
+        io.to(table.id).emit('pokerTableUpdate', getPokerTableState(table));
+        io.to(table.id).emit('pokerMessage', { text: `Krupier przydzielił ${data.amount} żetonów graczowi ${player.name}` });
+    });
+    
+    socket.on('pokerPlaceBet', (data) => {
+        const table = findPlayerTable(socket.id, pokerTables);
+        if (!table || table.gamePhase !== 'waiting') return;
+        
+        const player = table.players.find(p => p.id === socket.id);
+        if (!player) return;
+        
+        const betAmount = parseInt(data.amount) || 0;
+        if (betAmount <= 0 || betAmount > (player.chips || 0)) {
+            socket.emit('error', { message: 'Nieprawidłowa stawka!' });
+            return;
+        }
+        
+        player.currentBet = betAmount;
+        player.chips -= betAmount;
+        table.pot = (table.pot || 0) + betAmount;
+        
+        io.to(table.id).emit('pokerTableUpdate', getPokerTableState(table));
+        io.to(table.id).emit('pokerMessage', { text: `${player.name} postawił ${betAmount} żetonów!` });
     });
     
     // ========== ROULETTE EVENTS ==========

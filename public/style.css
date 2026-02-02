@@ -534,9 +534,8 @@ body {
 .game-layout {
     display: flex;
     gap: 10px;
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 8px;
+    width: 100%;
+    padding: 8px 15px;
     height: calc(100vh - 90px);
     overflow: hidden;
 }
@@ -805,12 +804,16 @@ body {
 /* Betting Controls */
 .betting-controls {
     text-align: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+    align-items: center;
 }
 
 .chips-display {
-    font-size: 1.3rem;
+    font-size: 1.1rem;
     color: #ffd700;
-    margin-bottom: 20px;
 }
 
 .bet-input {
@@ -1100,15 +1103,15 @@ body {
 .wheel-container {
     position: relative;
     display: inline-block;
-    padding-top: 25px;
+    padding-top: 30px;
 }
 
 .wheel-pointer {
     position: absolute;
-    top: 3px;
+    top: 5px;
     left: 50%;
     transform: translateX(-50%);
-    font-size: 1.5rem;
+    font-size: 2rem;
     color: #ffd700;
     z-index: 10;
     text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
@@ -1116,13 +1119,13 @@ body {
 }
 
 .roulette-wheel {
-    width: 200px;
-    height: 200px;
+    width: 300px;
+    height: 300px;
     border-radius: 50%;
-    border: 6px solid #ffd700;
+    border: 8px solid #ffd700;
     box-shadow: 
-        0 0 15px rgba(255, 215, 0, 0.5),
-        inset 0 0 15px rgba(0, 0, 0, 0.5);
+        0 0 20px rgba(255, 215, 0, 0.5),
+        inset 0 0 20px rgba(0, 0, 0, 0.5);
     transition: transform 5s cubic-bezier(0.17, 0.67, 0.12, 0.99);
     position: relative;
     overflow: hidden;
@@ -1138,19 +1141,19 @@ body {
 
 .wheel-number {
     position: absolute;
-    width: 18px;
-    height: 26px;
+    width: 24px;
+    height: 38px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.5rem;
+    font-size: 0.65rem;
     font-weight: bold;
     color: #fff;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.9);
     left: 50%;
     top: 50%;
-    margin-left: -9px;
-    margin-top: -13px;
+    margin-left: -12px;
+    margin-top: -19px;
     border-radius: 3px 3px 0 0;
 }
 
@@ -1171,15 +1174,15 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 130px;
-    height: 130px;
+    width: 190px;
+    height: 190px;
     border-radius: 50%;
     background: repeating-conic-gradient(
         from 0deg,
         #c62828 0deg 9.73deg,
         #1a1a1a 9.73deg 19.46deg
     );
-    border: 2px solid #8b6914;
+    border: 3px solid #8b6914;
 }
 
 .wheel-inner {
@@ -1187,14 +1190,14 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 50px;
-    height: 50px;
+    width: 70px;
+    height: 70px;
     background: radial-gradient(circle, #2e7d32 0%, #1a472a 70%, #0d3320 100%);
     border-radius: 50%;
-    border: 2px solid #ffd700;
+    border: 3px solid #ffd700;
     box-shadow: 
-        0 0 8px rgba(0, 0, 0, 0.5),
-        inset 0 0 10px rgba(0, 0, 0, 0.3);
+        0 0 10px rgba(0, 0, 0, 0.5),
+        inset 0 0 15px rgba(0, 0, 0, 0.3);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1202,12 +1205,12 @@ body {
 }
 
 .wheel-center {
-    width: 16px;
-    height: 16px;
+    width: 22px;
+    height: 22px;
     background: radial-gradient(circle, #ffd700 0%, #b8860b 100%);
     border-radius: 50%;
     border: 2px solid #8b6914;
-    box-shadow: 0 0 6px rgba(255, 215, 0, 0.5);
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
 }
 
 .winning-number {
@@ -1240,15 +1243,15 @@ body {
 .betting-hint {
     text-align: center;
     color: rgba(255, 255, 255, 0.7);
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     margin-bottom: 8px;
 }
 
 .roulette-grid {
     display: grid;
-    grid-template-columns: 35px repeat(12, 1fr);
-    gap: 2px;
-    max-width: 600px;
+    grid-template-columns: 45px repeat(12, 1fr);
+    gap: 3px;
+    max-width: 900px;
     margin: 0 auto 10px;
 }
 
@@ -1260,12 +1263,12 @@ body {
 }
 
 .bet-cell {
-    padding: 6px 4px;
+    padding: 8px 5px;
     text-align: center;
     font-weight: bold;
-    font-size: 0.75rem;
+    font-size: 0.9rem;
     cursor: pointer;
-    border-radius: 3px;
+    border-radius: 4px;
     transition: all 0.2s ease;
     border: 2px solid transparent;
 }
@@ -1299,16 +1302,16 @@ body {
 .outside-bets {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
-    gap: 4px;
-    max-width: 600px;
+    gap: 5px;
+    max-width: 900px;
     margin: 0 auto;
 }
 
 .bet-cell.outside {
     background: rgba(255, 255, 255, 0.1);
     color: #fff;
-    padding: 6px;
-    font-size: 0.7rem;
+    padding: 8px;
+    font-size: 0.85rem;
 }
 
 .bet-cell.red-bet {

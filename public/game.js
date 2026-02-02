@@ -122,9 +122,19 @@ document.getElementById('bjNewRoundBtn').addEventListener('click', () => {
 });
 
 // Player controls
-document.getElementById('bjReadyBtn').addEventListener('click', () => socket.emit('bjReady'));
+document.getElementById('bjPlaceBetBtn').addEventListener('click', () => {
+    const amount = parseInt(document.getElementById('bjBetInput').value) || 0;
+    socket.emit('bjPlaceBet', { amount });
+});
 document.getElementById('bjHitBtn').addEventListener('click', () => socket.emit('bjHit'));
 document.getElementById('bjStandBtn').addEventListener('click', () => socket.emit('bjStand'));
+
+// Croupier chips assignment
+document.getElementById('bjAssignChipsBtn').addEventListener('click', () => {
+    const playerId = document.getElementById('bjAssignChipsPlayer').value;
+    const amount = parseInt(document.getElementById('bjAssignChipsAmount').value) || 0;
+    socket.emit('bjAssignChips', { playerId, amount });
+});
 
 document.getElementById('bjCloseResultsBtn').addEventListener('click', () => {
     document.getElementById('bjResultsModal').classList.add('hidden');
@@ -253,26 +263,39 @@ function updateBJPlayersArea(state) {
         listHtml += `
             <div class="${itemClass}">
                 <div class="player-name">${isMe ? '👤 ' : ''}${player.name}</div>
-                <div class="player-status-text">${getStatusBadge(player.status)}</div>
+                <div class="player-chips">💰 ${player.chips || 0}</div>
+                <div class="player-status-text">${getStatusBadge(player.status)}${player.currentBet ? ` (${player.currentBet})` : ''}</div>
                 <div class="player-hand-value">Wartość: ${player.handValue}</div>
             </div>
         `;
         
-        if (isMe && player.hand.length > 0) {
-            cardDealIndex = 0;
-            const prevCount = previousPlayerCardCounts[player.id] || 0;
-            const cardsHtml = player.hand.map((card, i) => 
-                createCardHTML(card, false, i >= prevCount)
-            ).join('');
-            previousPlayerCardCounts[player.id] = player.hand.length;
+        if (isMe) {
+            document.getElementById('bjMyChips').textContent = player.chips || 0;
             
-            myCardsHtml = `
-                <h4>🃏 Twoje Karty</h4>
-                <div class="my-cards">${cardsHtml}</div>
-                <div class="my-hand-value">Wartość: ${player.handValue}</div>
-            `;
+            if (player.hand.length > 0) {
+                cardDealIndex = 0;
+                const prevCount = previousPlayerCardCounts[player.id] || 0;
+                const cardsHtml = player.hand.map((card, i) => 
+                    createCardHTML(card, false, i >= prevCount)
+                ).join('');
+                previousPlayerCardCounts[player.id] = player.hand.length;
+                
+                myCardsHtml = `
+                    <h4>🃏 Twoje Karty</h4>
+                    <div class="my-cards">${cardsHtml}</div>
+                    <div class="my-hand-value">Wartość: ${player.handValue}</div>
+                `;
+            }
         }
     });
+    
+    // Update croupier chips select
+    if (currentRole === 'croupier') {
+        const select = document.getElementById('bjAssignChipsPlayer');
+        select.innerHTML = state.players.map(p => 
+            `<option value="${p.id}">${p.name}</option>`
+        ).join('');
+    }
     
     document.getElementById('bjPlayersArea').innerHTML = listHtml || '<p class="no-players">Brak graczy</p>';
     document.getElementById('bjMyCardsArea').innerHTML = myCardsHtml;
@@ -292,6 +315,7 @@ function getStatusBadge(status) {
 
 function updateBJControls(state) {
     if (currentRole === 'croupier') {
+        document.getElementById('bjCroupierChipsControls').classList.remove('hidden');
         const hasReadyPlayers = state.players.some(p => p.status === 'ready');
         const allPlayersFinished = state.players.every(p => 
             p.status === 'stand' || p.status === 'bust' || p.status === 'blackjack'
@@ -304,16 +328,17 @@ function updateBJControls(state) {
         document.getElementById('bjNewRoundBtn').classList.toggle('hidden', 
             state.gamePhase !== 'finished');
     } else {
+        document.getElementById('bjCroupierChipsControls').classList.add('hidden');
         const myPlayer = state.players.find(p => p.id === myPlayerId);
         
         if (state.gamePhase === 'waiting' && myPlayer?.status === 'waiting') {
-            document.getElementById('bjReadyControls').classList.remove('hidden');
+            document.getElementById('bjBettingControls').classList.remove('hidden');
             document.getElementById('bjPlayingControls').classList.add('hidden');
         } else if (state.gamePhase === 'playing' && myPlayer?.isCurrentTurn) {
-            document.getElementById('bjReadyControls').classList.add('hidden');
+            document.getElementById('bjBettingControls').classList.add('hidden');
             document.getElementById('bjPlayingControls').classList.remove('hidden');
         } else {
-            document.getElementById('bjReadyControls').classList.add('hidden');
+            document.getElementById('bjBettingControls').classList.add('hidden');
             document.getElementById('bjPlayingControls').classList.add('hidden');
         }
     }
@@ -456,7 +481,8 @@ function updatePokerPlayersArea(state) {
         listHtml += `
             <div class="${itemClass}">
                 <div class="player-name">${isMe ? '👤 ' : ''}${player.name}</div>
-                <div class="player-status-text">${player.folded ? '❌ FOLD' : (isCurrentTurn ? '🎮 Gra' : '⏳ Czeka')}</div>
+                <div class="player-chips">💰 ${player.chips || 0}</div>
+                <div class="player-status-text">${player.folded ? '❌ FOLD' : (isCurrentTurn ? '🎮 Gra' : '⏳ Czeka')}${player.currentBet ? ` (${player.currentBet})` : ''}</div>
             </div>
         `;
         
@@ -471,6 +497,14 @@ function updatePokerPlayersArea(state) {
         }
     });
     
+    // Update croupier chips select
+    if (currentRole === 'croupier') {
+        const select = document.getElementById('pokerAssignChipsPlayer');
+        select.innerHTML = state.players.map(p => 
+            `<option value="${p.id}">${p.name}</option>`
+        ).join('');
+    }
+    
     document.getElementById('pokerPlayersArea').innerHTML = listHtml || '<p class="no-players">Brak graczy</p>';
     document.getElementById('pokerMyCardsArea').innerHTML = myCardsHtml;
 }
@@ -482,6 +516,7 @@ function updatePokerControls(state) {
     if (currentRole === 'croupier') {
         croupierControls.classList.remove('hidden');
         playerControls.classList.add('hidden');
+        document.getElementById('pokerCroupierChipsControls').classList.remove('hidden');
         
         document.getElementById('pokerStartGameBtn').classList.toggle('hidden', state.gamePhase !== 'waiting');
         document.getElementById('pokerNextPhaseBtn').classList.toggle('hidden', 
@@ -489,6 +524,7 @@ function updatePokerControls(state) {
         document.getElementById('pokerNextRoundBtn').classList.toggle('hidden', state.gamePhase !== 'finished');
     } else {
         croupierControls.classList.add('hidden');
+        document.getElementById('pokerCroupierChipsControls').classList.add('hidden');
         const myPlayer = state.players.find(p => p.id === myPlayerId);
         
         if (myPlayer?.isCurrentTurn && ['preflop', 'flop', 'turn', 'river'].includes(state.gamePhase)) {
@@ -498,6 +534,13 @@ function updatePokerControls(state) {
         }
     }
 }
+
+// Poker chips assignment
+document.getElementById('pokerAssignChipsBtn').addEventListener('click', () => {
+    const playerId = document.getElementById('pokerAssignChipsPlayer').value;
+    const amount = parseInt(document.getElementById('pokerAssignChipsAmount').value) || 0;
+    socket.emit('pokerAssignChips', { playerId, amount });
+});
 
 // ==================== ROULETTE ====================
 
