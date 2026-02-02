@@ -3,8 +3,7 @@ const socket = io();
 
 // Player State
 let playerData = {
-    nickname: '',
-    balance: 0
+    nickname: ''
 };
 
 let currentGame = null;
@@ -13,13 +12,11 @@ let currentRole = null;
 let myPlayerId = null;
 
 // Blackjack state
-let bjCurrentBet = 0;
 let previousDealerCardCount = 0;
 let previousPlayerCardCounts = {};
 
 // Roulette state
 let rouletteBets = [];
-let selectedChipValue = 10;
 
 // Initialize
 socket.on('connect', () => {
@@ -28,36 +25,20 @@ socket.on('connect', () => {
 
 // ==================== MAIN MENU ====================
 
-const mainMenu = document.getElementById('mainMenu');
-const gameSelection = document.getElementById('gameSelection');
 const enterCasinoBtn = document.getElementById('enterCasinoBtn');
 const exitCasinoBtn = document.getElementById('exitCasinoBtn');
 const playerNicknameInput = document.getElementById('playerNickname');
-const entryStakeInput = document.getElementById('entryStake');
 
 enterCasinoBtn.addEventListener('click', () => {
     const nickname = playerNicknameInput.value.trim();
-    const stake = parseInt(entryStakeInput.value);
     
     if (!nickname) {
         alert('Wprowadź nick postaci IC!');
         return;
     }
     
-    if (!stake || stake < 10) {
-        alert('Minimalna stawka wejściowa to $10!');
-        return;
-    }
-    
-    if (stake > 1000000) {
-        alert('Maksymalna stawka wejściowa to $1,000,000!');
-        return;
-    }
-    
     playerData.nickname = nickname;
-    playerData.balance = stake;
-    
-    updateBalanceDisplays();
+    updateNicknameDisplays();
     showScreen('gameSelection');
 });
 
@@ -67,21 +48,13 @@ exitCasinoBtn.addEventListener('click', () => {
     }
 });
 
-function updateBalanceDisplays() {
+function updateNicknameDisplays() {
     document.getElementById('displayNickname').textContent = playerData.nickname;
-    document.getElementById('displayBalance').textContent = playerData.balance.toLocaleString();
     
-    // Update all game-specific displays
     const displays = ['bjDisplayNick', 'pokerDisplayNick', 'rouletteDisplayNick'];
     displays.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.textContent = playerData.nickname;
-    });
-    
-    const balanceDisplays = ['bjDisplayBalance', 'pokerDisplayBalance', 'rouletteDisplayBalance', 'bjMyChips'];
-    balanceDisplays.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = playerData.balance.toLocaleString();
     });
 }
 
@@ -113,17 +86,13 @@ document.getElementById('backToGamesFromRoulette').addEventListener('click', () 
 function showScreen(screenId) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(screenId).classList.add('active');
-    updateBalanceDisplays();
+    updateNicknameDisplays();
 }
 
 // ==================== BLACKJACK ====================
 
-const blackjackLobby = document.getElementById('blackjackLobby');
-const blackjackGame = document.getElementById('blackjackGame');
-const blackjackTablesList = document.getElementById('blackjackTablesList');
-
 document.getElementById('createBlackjackTableBtn').addEventListener('click', () => {
-    socket.emit('createBlackjackTable', { name: playerData.nickname, chips: playerData.balance });
+    socket.emit('createBlackjackTable', { name: playerData.nickname });
 });
 
 document.getElementById('refreshBlackjackTablesBtn').addEventListener('click', () => {
@@ -139,40 +108,23 @@ document.getElementById('leaveBlackjackTableBtn').addEventListener('click', () =
     socket.emit('getBlackjackTables');
 });
 
-// Blackjack chip buttons
-document.querySelectorAll('.bj-chip').forEach(btn => {
-    btn.addEventListener('click', () => {
-        bjCurrentBet += parseInt(btn.dataset.value);
-        document.getElementById('bjCurrentBetAmount').textContent = bjCurrentBet;
-    });
-});
-
-document.getElementById('bjPlaceBetBtn').addEventListener('click', () => {
-    if (bjCurrentBet > 0 && bjCurrentBet <= playerData.balance) {
-        socket.emit('bjPlaceBet', { amount: bjCurrentBet });
-    }
-});
-
 // Croupier controls
-document.getElementById('bjStartBettingBtn').addEventListener('click', () => {
-    // Reset card counters for new round
+document.getElementById('bjDealCardsBtn').addEventListener('click', () => {
     previousDealerCardCount = 0;
     previousPlayerCardCounts = {};
-    socket.emit('bjStartBetting');
+    socket.emit('bjDealCards');
 });
-document.getElementById('bjDealCardsBtn').addEventListener('click', () => socket.emit('bjDealCards'));
 document.getElementById('bjCroupierPlayBtn').addEventListener('click', () => socket.emit('bjCroupierPlay'));
 document.getElementById('bjNewRoundBtn').addEventListener('click', () => {
-    // Reset card counters for new round
     previousDealerCardCount = 0;
     previousPlayerCardCounts = {};
-    socket.emit('bjStartBetting');
+    socket.emit('bjNewRound');
 });
 
 // Player controls
+document.getElementById('bjReadyBtn').addEventListener('click', () => socket.emit('bjReady'));
 document.getElementById('bjHitBtn').addEventListener('click', () => socket.emit('bjHit'));
 document.getElementById('bjStandBtn').addEventListener('click', () => socket.emit('bjStand'));
-document.getElementById('bjDoubleBtn').addEventListener('click', () => socket.emit('bjDoubleDown'));
 
 document.getElementById('bjCloseResultsBtn').addEventListener('click', () => {
     document.getElementById('bjResultsModal').classList.add('hidden');
@@ -180,12 +132,13 @@ document.getElementById('bjCloseResultsBtn').addEventListener('click', () => {
 
 // Blackjack Socket Events
 socket.on('blackjackTableList', (tables) => {
+    const list = document.getElementById('blackjackTablesList');
     if (tables.length === 0) {
-        blackjackTablesList.innerHTML = '<p class="no-tables">Brak dostępnych stołów. Stwórz własny!</p>';
+        list.innerHTML = '<p class="no-tables">Brak dostępnych stołów. Stwórz własny!</p>';
         return;
     }
     
-    blackjackTablesList.innerHTML = tables.map(table => `
+    list.innerHTML = tables.map(table => `
         <div class="table-card">
             <div class="table-card-info">
                 <h4>🎰 Stół ${table.croupierName}</h4>
@@ -201,8 +154,7 @@ socket.on('blackjackTableList', (tables) => {
         btn.addEventListener('click', () => {
             socket.emit('joinBlackjackTable', { 
                 tableId: btn.dataset.id, 
-                name: playerData.nickname,
-                chips: playerData.balance
+                name: playerData.nickname
             });
         });
     });
@@ -244,18 +196,11 @@ socket.on('bjRoundResults', (results) => {
         ${results.players.map(p => `
             <div class="result-item ${p.result}">
                 <span>${p.name}</span>
-                <span class="result-text">${formatResult(p.result)} (${p.chips} żetonów)</span>
+                <span class="result-text">${formatResult(p.result)} ${p.multiplier ? `(${p.multiplier}x)` : ''}</span>
             </div>
         `).join('')}
     `;
     document.getElementById('bjResultsModal').classList.remove('hidden');
-    
-    // Update balance
-    const myResult = results.players.find(p => p.id === myPlayerId);
-    if (myResult) {
-        playerData.balance = myResult.chips;
-        updateBalanceDisplays();
-    }
 });
 
 socket.on('bjTableClosed', (data) => {
@@ -273,7 +218,7 @@ socket.on('bjTablesUpdated', () => {
 function updateBlackjackState(state) {
     document.getElementById('bjCroupierName').textContent = state.croupier?.name || '---';
     
-    // Animuj karty krupiera jeśli są nowe
+    // Animate dealer cards if new
     const dealerCardsEl = document.getElementById('bjDealerCards');
     const newDealerCount = state.dealerHand.length;
     if (newDealerCount > previousDealerCardCount) {
@@ -309,7 +254,6 @@ function updateBJPlayersArea(state) {
         if (player.status === 'bust') slotClass += ' bust';
         if (player.status === 'blackjack') slotClass += ' blackjack';
         
-        // Generuj karty z animacją dla nowych
         cardDealIndex = 0;
         const cardsHtml = player.hand.map((card, i) => 
             createCardHTML(card, true, i >= prevCount)
@@ -321,23 +265,17 @@ function updateBJPlayersArea(state) {
             <div class="${slotClass}">
                 <div class="player-info">
                     <span class="player-name">${isMe ? '👤 ' : ''}${player.name}</span>
-                    <span class="player-chips">💰 ${player.chips}</span>
+                    <span class="player-status-badge ${player.status}">${getStatusBadge(player.status)}</span>
                 </div>
-                <div class="player-bet">Zakład: $${player.bet}</div>
                 <div class="player-cards">
                     ${cardsHtml}
                 </div>
                 <div class="player-value">Wartość: ${player.handValue}</div>
-                ${player.status !== 'waiting' && player.status !== 'betting' && player.status !== 'ready' && player.status !== 'playing' 
+                ${player.status !== 'waiting' && player.status !== 'ready' && player.status !== 'playing' 
                     ? `<div class="player-status ${player.status}">${player.status.toUpperCase()}</div>` 
                     : ''}
             </div>
         `;
-        
-        if (isMe) {
-            playerData.balance = player.chips;
-            updateBalanceDisplays();
-        }
     });
     
     for (let i = state.players.length; i < maxSlots; i++) {
@@ -347,26 +285,42 @@ function updateBJPlayersArea(state) {
     document.getElementById('bjPlayersArea').innerHTML = html;
 }
 
+function getStatusBadge(status) {
+    const badges = {
+        'waiting': '⏳ Czeka',
+        'ready': '✅ Gotowy',
+        'playing': '🎮 Gra',
+        'stand': '✋ Stoi',
+        'bust': '💥 Bust',
+        'blackjack': '🎰 BJ!'
+    };
+    return badges[status] || status;
+}
+
 function updateBJControls(state) {
     if (currentRole === 'croupier') {
-        document.getElementById('bjStartBettingBtn').classList.toggle('hidden', state.gamePhase !== 'waiting' && state.gamePhase !== 'finished');
-        document.getElementById('bjDealCardsBtn').classList.toggle('hidden', state.gamePhase !== 'betting');
-        document.getElementById('bjCroupierPlayBtn').classList.toggle('hidden', state.gamePhase !== 'croupierTurn');
-        document.getElementById('bjNewRoundBtn').classList.toggle('hidden', state.gamePhase !== 'finished');
+        const hasReadyPlayers = state.players.some(p => p.status === 'ready');
+        const allPlayersFinished = state.players.every(p => 
+            p.status === 'stand' || p.status === 'bust' || p.status === 'blackjack'
+        );
+        
+        document.getElementById('bjDealCardsBtn').classList.toggle('hidden', 
+            state.gamePhase !== 'waiting' || !hasReadyPlayers);
+        document.getElementById('bjCroupierPlayBtn').classList.toggle('hidden', 
+            state.gamePhase !== 'playing' || !allPlayersFinished);
+        document.getElementById('bjNewRoundBtn').classList.toggle('hidden', 
+            state.gamePhase !== 'finished');
     } else {
         const myPlayer = state.players.find(p => p.id === myPlayerId);
         
-        if (state.gamePhase === 'betting' && myPlayer?.status === 'betting') {
-            document.getElementById('bjBettingControls').classList.remove('hidden');
+        if (state.gamePhase === 'waiting' && myPlayer?.status === 'waiting') {
+            document.getElementById('bjReadyControls').classList.remove('hidden');
             document.getElementById('bjPlayingControls').classList.add('hidden');
-            bjCurrentBet = 0;
-            document.getElementById('bjCurrentBetAmount').textContent = '0';
         } else if (state.gamePhase === 'playing' && myPlayer?.isCurrentTurn) {
-            document.getElementById('bjBettingControls').classList.add('hidden');
+            document.getElementById('bjReadyControls').classList.add('hidden');
             document.getElementById('bjPlayingControls').classList.remove('hidden');
-            document.getElementById('bjDoubleBtn').disabled = myPlayer.hand.length !== 2 || myPlayer.chips < myPlayer.bet;
         } else {
-            document.getElementById('bjBettingControls').classList.add('hidden');
+            document.getElementById('bjReadyControls').classList.add('hidden');
             document.getElementById('bjPlayingControls').classList.add('hidden');
         }
     }
@@ -375,7 +329,7 @@ function updateBJControls(state) {
 // ==================== POKER ====================
 
 document.getElementById('createPokerTableBtn').addEventListener('click', () => {
-    socket.emit('createPokerTable', { name: playerData.nickname, chips: playerData.balance });
+    socket.emit('createPokerTable', { name: playerData.nickname });
 });
 
 document.getElementById('refreshPokerTablesBtn').addEventListener('click', () => {
@@ -391,15 +345,13 @@ document.getElementById('leavePokerTableBtn').addEventListener('click', () => {
 
 // Poker controls
 document.getElementById('pokerStartGameBtn').addEventListener('click', () => socket.emit('pokerStartGame'));
+document.getElementById('pokerNextPhaseBtn').addEventListener('click', () => socket.emit('pokerNextPhase'));
 document.getElementById('pokerNextRoundBtn').addEventListener('click', () => socket.emit('pokerNextRound'));
 document.getElementById('pokerFoldBtn').addEventListener('click', () => socket.emit('pokerFold'));
 document.getElementById('pokerCheckBtn').addEventListener('click', () => socket.emit('pokerCheck'));
-document.getElementById('pokerCallBtn').addEventListener('click', () => socket.emit('pokerCall'));
-document.getElementById('pokerRaiseBtn').addEventListener('click', () => {
-    const amount = parseInt(document.getElementById('raiseAmount').value);
-    socket.emit('pokerRaise', { amount });
+document.getElementById('pokerCloseResultsBtn').addEventListener('click', () => {
+    document.getElementById('pokerResultsModal').classList.add('hidden');
 });
-document.getElementById('pokerAllInBtn').addEventListener('click', () => socket.emit('pokerAllIn'));
 
 socket.on('pokerTableList', (tables) => {
     const list = document.getElementById('pokerTablesList');
@@ -424,8 +376,7 @@ socket.on('pokerTableList', (tables) => {
         btn.addEventListener('click', () => {
             socket.emit('joinPokerTable', { 
                 tableId: btn.dataset.id, 
-                name: playerData.nickname,
-                chips: playerData.balance
+                name: playerData.nickname
             });
         });
     });
@@ -459,6 +410,19 @@ socket.on('pokerMessage', (data) => {
     document.getElementById('pokerGameMessage').textContent = data.text;
 });
 
+socket.on('pokerRoundResult', (data) => {
+    document.getElementById('pokerResultsContent').innerHTML = `
+        <div class="winner-display">
+            <div class="winner-name">🏆 ${data.winner.name}</div>
+            <div class="winner-hand">${data.winner.handName}</div>
+            <div class="winner-cards">
+                ${data.winner.hand.map(card => createCardHTML(card)).join('')}
+            </div>
+        </div>
+    `;
+    document.getElementById('pokerResultsModal').classList.remove('hidden');
+});
+
 socket.on('pokerTableClosed', (data) => {
     alert(data.message);
     showScreen('pokerLobby');
@@ -473,7 +437,6 @@ socket.on('pokerTablesUpdated', () => {
 
 function updatePokerState(state) {
     document.getElementById('communityCards').innerHTML = state.communityCards.map(card => createCardHTML(card)).join('');
-    document.getElementById('currentPot').textContent = state.pot;
     document.getElementById('pokerGamePhase').textContent = formatPokerPhase(state.gamePhase);
     
     updatePokerPlayersArea(state);
@@ -490,24 +453,16 @@ function updatePokerPlayersArea(state) {
         let slotClass = 'poker-player';
         if (isCurrentTurn) slotClass += ' active';
         if (player.folded) slotClass += ' folded';
-        if (player.isDealer) slotClass += ' dealer-btn';
         
         html += `
             <div class="${slotClass}">
                 <div class="player-name">${isMe ? '👤 ' : ''}${player.name}</div>
-                <div class="player-chips">💰 ${player.chips}</div>
-                <div class="player-bet">Zakład: $${player.currentBet}</div>
                 <div class="player-cards">
-                    ${(isMe ? player.hand : player.hand.map(() => ({value: '?', suit: '?'}))).map(card => createCardHTML(card, true)).join('')}
+                    ${(isMe || state.gamePhase === 'showdown' ? player.hand : player.hand.map(() => ({value: '?', suit: '?'}))).map(card => createCardHTML(card, true)).join('')}
                 </div>
-                ${player.folded ? '<div class="player-status">FOLD</div>' : ''}
+                ${player.folded ? '<div class="player-status folded">FOLD</div>' : ''}
             </div>
         `;
-        
-        if (isMe) {
-            playerData.balance = player.chips;
-            updateBalanceDisplays();
-        }
     });
     
     document.getElementById('pokerPlayersArea').innerHTML = html;
@@ -516,15 +471,15 @@ function updatePokerPlayersArea(state) {
 function updatePokerControls(state) {
     if (currentRole === 'croupier') {
         document.getElementById('pokerStartGameBtn').classList.toggle('hidden', state.gamePhase !== 'waiting');
+        document.getElementById('pokerNextPhaseBtn').classList.toggle('hidden', 
+            !['preflop', 'flop', 'turn', 'river'].includes(state.gamePhase));
         document.getElementById('pokerNextRoundBtn').classList.toggle('hidden', state.gamePhase !== 'finished');
     } else {
         const myPlayer = state.players.find(p => p.id === myPlayerId);
         const controls = document.getElementById('pokerPlayerControls');
         
-        if (myPlayer?.isCurrentTurn && state.gamePhase === 'betting') {
+        if (myPlayer?.isCurrentTurn && ['preflop', 'flop', 'turn', 'river'].includes(state.gamePhase)) {
             controls.classList.remove('hidden');
-            document.getElementById('callAmount').textContent = state.currentBet - (myPlayer.currentBet || 0);
-            document.getElementById('pokerCheckBtn').disabled = state.currentBet > myPlayer.currentBet;
         } else {
             controls.classList.add('hidden');
         }
@@ -534,7 +489,7 @@ function updatePokerControls(state) {
 // ==================== ROULETTE ====================
 
 document.getElementById('createRouletteTableBtn').addEventListener('click', () => {
-    socket.emit('createRouletteTable', { name: playerData.nickname, chips: playerData.balance });
+    socket.emit('createRouletteTable', { name: playerData.nickname });
 });
 
 document.getElementById('refreshRouletteTablesBtn').addEventListener('click', () => {
@@ -549,20 +504,11 @@ document.getElementById('leaveRouletteTableBtn').addEventListener('click', () =>
     socket.emit('getRouletteTables');
 });
 
-// Roulette chip selection
-document.querySelectorAll('.roulette-chip').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('.roulette-chip').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        selectedChipValue = parseInt(btn.dataset.value);
-    });
-});
-
-// Betting on roulette
+// Roulette betting
 document.querySelectorAll('.bet-cell').forEach(cell => {
     cell.addEventListener('click', () => {
         const betType = cell.dataset.bet;
-        addRouletteBet(betType, selectedChipValue);
+        toggleRouletteBet(betType, cell);
     });
 });
 
@@ -575,6 +521,8 @@ document.getElementById('clearRouletteBetsBtn').addEventListener('click', () => 
 document.getElementById('confirmRouletteBetsBtn').addEventListener('click', () => {
     if (rouletteBets.length > 0) {
         socket.emit('rouletteConfirmBets', { bets: rouletteBets });
+    } else {
+        alert('Wybierz przynajmniej jeden typ!');
     }
 });
 
@@ -584,33 +532,40 @@ document.getElementById('rouletteCloseResultsBtn').addEventListener('click', () 
     document.getElementById('rouletteResultsModal').classList.add('hidden');
 });
 
-function addRouletteBet(betType, amount) {
-    const totalBet = rouletteBets.reduce((sum, b) => sum + b.amount, 0);
-    if (totalBet + amount > playerData.balance) {
-        alert('Niewystarczające środki!');
-        return;
-    }
-    
-    const existingBet = rouletteBets.find(b => b.type === betType);
-    if (existingBet) {
-        existingBet.amount += amount;
+function toggleRouletteBet(betType, cell) {
+    const index = rouletteBets.indexOf(betType);
+    if (index > -1) {
+        rouletteBets.splice(index, 1);
+        cell.classList.remove('selected');
     } else {
-        rouletteBets.push({ type: betType, amount });
+        rouletteBets.push(betType);
+        cell.classList.add('selected');
     }
-    
-    document.querySelector(`[data-bet="${betType}"]`)?.classList.add('selected');
     updateRouletteBetsDisplay();
 }
 
 function updateRouletteBetsDisplay() {
     const container = document.getElementById('myRouletteBets');
-    const total = rouletteBets.reduce((sum, b) => sum + b.amount, 0);
     
-    container.innerHTML = rouletteBets.map(b => `
-        <div>${b.type}: $${b.amount}</div>
-    `).join('') || '<p style="color: rgba(255,255,255,0.5)">Brak zakładów</p>';
-    
-    document.getElementById('totalRouletteBet').textContent = total;
+    if (rouletteBets.length === 0) {
+        container.innerHTML = '<p class="no-bets">Wybierz pola na planszy</p>';
+    } else {
+        container.innerHTML = rouletteBets.map(b => `
+            <div class="bet-tag">${formatBetType(b)}</div>
+        `).join('');
+    }
+}
+
+function formatBetType(bet) {
+    const labels = {
+        'red': '🔴 Czerwone',
+        'black': '⚫ Czarne',
+        'even': 'Parzyste',
+        'odd': 'Nieparzyste',
+        '1-18': '1-18',
+        '19-36': '19-36'
+    };
+    return labels[bet] || `Numer ${bet}`;
 }
 
 socket.on('rouletteTableList', (tables) => {
@@ -636,8 +591,7 @@ socket.on('rouletteTableList', (tables) => {
         btn.addEventListener('click', () => {
             socket.emit('joinRouletteTable', { 
                 tableId: btn.dataset.id, 
-                name: playerData.nickname,
-                chips: playerData.balance
+                name: playerData.nickname
             });
         });
     });
@@ -676,6 +630,7 @@ socket.on('rouletteSpin', (data) => {
     
     setTimeout(() => {
         document.getElementById('winningNumber').textContent = data.result;
+        wheel.classList.remove('spinning');
     }, 4000);
 });
 
@@ -686,20 +641,14 @@ socket.on('rouletteResults', (results) => {
         (isRedNumber(results.winningNumber) ? '' : 'black-num');
     
     document.getElementById('rouletteResultsContent').innerHTML = results.players.map(p => `
-        <div class="result-item ${p.won > 0 ? 'win' : 'lose'}">
+        <div class="result-item ${p.won ? 'win' : 'lose'}">
             <span>${p.name}</span>
-            <span>${p.won > 0 ? '+' : ''}$${p.won} (${p.chips} żetonów)</span>
+            <span>${p.won ? `✅ WYGRANA! ${p.multiplier}x` : '❌ Przegrana'}</span>
         </div>
+        ${p.hits && p.hits.length > 0 ? `<div class="hits-detail">Trafione: ${p.hits.join(', ')}</div>` : ''}
     `).join('');
     
     document.getElementById('rouletteResultsModal').classList.remove('hidden');
-    
-    // Update balance
-    const myResult = results.players.find(p => p.id === myPlayerId);
-    if (myResult) {
-        playerData.balance = myResult.chips;
-        updateBalanceDisplays();
-    }
     
     // Reset bets
     rouletteBets = [];
@@ -721,7 +670,7 @@ socket.on('rouletteTablesUpdated', () => {
 
 function updateRouletteState(state) {
     document.getElementById('rouletteGamePhase').textContent = formatRoulettePhase(state.gamePhase);
-    document.getElementById('winningNumber').textContent = state.lastResult || '-';
+    document.getElementById('winningNumber').textContent = state.lastResult !== null ? state.lastResult : '-';
     
     if (currentRole === 'croupier') {
         document.getElementById('rouletteSpinBtn').classList.toggle('hidden', state.gamePhase !== 'betting');
@@ -733,17 +682,12 @@ function updateRouletteState(state) {
     state.players.forEach(p => {
         const isMe = p.id === myPlayerId;
         html += `
-            <div class="poker-player ${isMe ? 'current-player' : ''}">
+            <div class="roulette-player ${isMe ? 'current-player' : ''} ${p.ready ? 'ready' : ''}">
                 <div class="player-name">${isMe ? '👤 ' : ''}${p.name}</div>
-                <div class="player-chips">💰 ${p.chips}</div>
-                <div class="player-bet">Zakład: $${p.totalBet || 0}</div>
+                <div class="player-status">${p.ready ? '✅ Gotowy' : '⏳ Wybiera'}</div>
+                ${p.bets && p.bets.length > 0 ? `<div class="player-bets">${p.bets.length} typów</div>` : ''}
             </div>
         `;
-        
-        if (isMe) {
-            playerData.balance = p.chips;
-            updateBalanceDisplays();
-        }
     });
     document.getElementById('roulettePlayersArea').innerHTML = html;
 }
@@ -777,18 +721,10 @@ function createCardHTML(card, small = false, animate = false) {
     `;
 }
 
-function createCardsWithAnimation(cards, containerId) {
-    cardDealIndex = 0;
-    const container = document.getElementById(containerId);
-    container.innerHTML = cards.map(card => createCardHTML(card, false, true)).join('');
-}
-
 function formatPhase(phase) {
     const phases = {
         'waiting': '⏳ Oczekiwanie',
-        'betting': '💰 Stawianie Zakładów',
-        'dealing': '🃏 Rozdawanie',
-        'playing': '🎮 Tura Graczy',
+        'playing': '🎮 Gra w toku',
         'croupierTurn': '🎩 Tura Krupiera',
         'finished': '🏆 Zakończone'
     };
@@ -811,7 +747,7 @@ function formatPokerPhase(phase) {
 function formatRoulettePhase(phase) {
     const phases = {
         'waiting': '⏳ Oczekiwanie',
-        'betting': '💰 Stawianie Zakładów',
+        'betting': '🎯 Wybieranie typów',
         'spinning': '🎡 Kręcenie...',
         'finished': '🏆 Zakończone'
     };

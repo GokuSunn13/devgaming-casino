@@ -22,12 +22,6 @@
                     <input type="text" id="playerNickname" placeholder="Wprowadź imię i nazwisko postaci" maxlength="30">
                 </div>
                 
-                <div class="form-group">
-                    <label for="entryStake">Stawka wejściowa ($)</label>
-                    <input type="number" id="entryStake" placeholder="Wpisz kwotę żetonów (min. $10)" min="10" max="1000000" value="100">
-                    <p class="stake-hint">💡 Wpisz dowolną kwotę od $10 do $1,000,000</p>
-                </div>
-                
                 <button id="enterCasinoBtn" class="btn btn-gold btn-large">
                     🎲 Wejdź do Kasyna
                 </button>
@@ -36,9 +30,8 @@
         
         <div class="legal-notice">
             <p>⚠️ <strong>INFORMACJA PRAWNA:</strong> DevGaming Casino nie jest prawdziwym kasynem. 
-            Nie można wpłacać ani wypłacać prawdziwej waluty. Wszystkie żetony są wirtualne i nie mają 
-            żadnej wartości pieniężnej. Strona służy wyłącznie celom rozrywkowym i roleplay na serwerze DevGaming.
-            Gra jest przeznaczona wyłącznie dla osób pełnoletnich. Wszelkie podobieństwo do prawdziwych kasyn jest przypadkowe.</p>
+            Strona służy wyłącznie celom rozrywkowym i roleplay na serwerze DevGaming.
+            Gra jest przeznaczona wyłącznie dla osób pełnoletnich.</p>
         </div>
     </div>
     
@@ -47,7 +40,6 @@
         <div class="game-selection-header">
             <div class="player-info-bar">
                 <span class="player-nick">👤 <span id="displayNickname">---</span></span>
-                <span class="player-balance">💰 Żetony: $<span id="displayBalance">0</span></span>
             </div>
             <button id="exitCasinoBtn" class="btn btn-danger">Opuść Kasyno</button>
         </div>
@@ -60,6 +52,7 @@
                     <div class="game-icon">🃏</div>
                     <h3>Blackjack</h3>
                     <p>Klasyczna gra karciana. Zbierz 21 punktów!</p>
+                    <div class="multipliers">Wygrana: 1x | Blackjack: 1.5x</div>
                     <button class="btn btn-gold">Graj</button>
                 </div>
                 
@@ -67,6 +60,7 @@
                     <div class="game-icon">♠️</div>
                     <h3>Poker Texas Hold'em</h3>
                     <p>Zmierz się z innymi graczami w pokera!</p>
+                    <div class="multipliers">Zwycięzca bierze wszystko!</div>
                     <button class="btn btn-gold">Graj</button>
                 </div>
                 
@@ -74,14 +68,14 @@
                     <div class="game-icon">🎡</div>
                     <h3>Ruletka</h3>
                     <p>Postaw na swój szczęśliwy numer!</p>
+                    <div class="multipliers">Numer: 35x | Kolor: 2x | Pół: 2x</div>
                     <button class="btn btn-gold">Graj</button>
                 </div>
             </div>
         </div>
         
         <div class="legal-notice">
-            <p>⚠️ <strong>INFORMACJA PRAWNA:</strong> DevGaming Casino nie jest prawdziwym kasynem. 
-            Wszystkie żetony są wirtualne i nie mają żadnej wartości pieniężnej. Strona służy wyłącznie celom rozrywkowym.</p>
+            <p>⚠️ <strong>INFORMACJA PRAWNA:</strong> DevGaming Casino - strona służy wyłącznie celom rozrywkowym.</p>
         </div>
     </div>
     
@@ -94,7 +88,6 @@
             </div>
             <div class="player-info-bar">
                 <span class="player-nick">👤 <span id="bjDisplayNick">---</span></span>
-                <span class="player-balance">💰 $<span id="bjDisplayBalance">0</span></span>
             </div>
         </div>
         
@@ -117,7 +110,7 @@
         </div>
         
         <div class="legal-notice">
-            <p>⚠️ <strong>INFORMACJA PRAWNA:</strong> DevGaming Casino - wszystkie żetony są wirtualne i nie mają żadnej wartości pieniężnej.</p>
+            <p>⚠️ <strong>INFORMACJA PRAWNA:</strong> DevGaming Casino - strona służy wyłącznie celom rozrywkowym.</p>
         </div>
     </div>
     
@@ -149,30 +142,19 @@
             
             <div class="controls-area">
                 <div id="bjCroupierControls" class="controls hidden">
-                    <button id="bjStartBettingBtn" class="btn btn-gold">Rozpocznij Zakłady</button>
-                    <button id="bjDealCardsBtn" class="btn btn-gold hidden">Rozdaj Karty</button>
+                    <button id="bjDealCardsBtn" class="btn btn-gold">🃏 Rozdaj Karty</button>
                     <button id="bjCroupierPlayBtn" class="btn btn-gold hidden">Odkryj & Graj</button>
                     <button id="bjNewRoundBtn" class="btn btn-gold hidden">Nowa Runda</button>
                 </div>
                 
                 <div id="bjPlayerControls" class="controls hidden">
-                    <div id="bjBettingControls" class="betting-controls hidden">
-                        <div class="chips-display">Żetony: <span id="bjMyChips">0</span></div>
-                        <div class="bet-input">
-                            <button class="chip-btn bj-chip" data-value="10">$10</button>
-                            <button class="chip-btn bj-chip" data-value="25">$25</button>
-                            <button class="chip-btn bj-chip" data-value="50">$50</button>
-                            <button class="chip-btn bj-chip" data-value="100">$100</button>
-                            <button class="chip-btn bj-chip" data-value="500">$500</button>
-                        </div>
-                        <div class="current-bet">Zakład: $<span id="bjCurrentBetAmount">0</span></div>
-                        <button id="bjPlaceBetBtn" class="btn btn-gold">Postaw Zakład</button>
+                    <div id="bjReadyControls" class="ready-controls hidden">
+                        <button id="bjReadyBtn" class="btn btn-gold btn-large">✅ Gotowy do gry!</button>
                     </div>
                     
                     <div id="bjPlayingControls" class="playing-controls hidden">
                         <button id="bjHitBtn" class="btn btn-green">DOBIERZ</button>
                         <button id="bjStandBtn" class="btn btn-red">STÓJ</button>
-                        <button id="bjDoubleBtn" class="btn btn-gold">PODWÓJ</button>
                     </div>
                 </div>
             </div>
@@ -196,7 +178,6 @@
             </div>
             <div class="player-info-bar">
                 <span class="player-nick">👤 <span id="pokerDisplayNick">---</span></span>
-                <span class="player-balance">💰 $<span id="pokerDisplayBalance">0</span></span>
             </div>
         </div>
         
@@ -219,7 +200,7 @@
         </div>
         
         <div class="legal-notice">
-            <p>⚠️ <strong>INFORMACJA PRAWNA:</strong> DevGaming Casino - wszystkie żetony są wirtualne i nie mają żadnej wartości pieniężnej.</p>
+            <p>⚠️ <strong>INFORMACJA PRAWNA:</strong> DevGaming Casino - strona służy wyłącznie celom rozrywkowym.</p>
         </div>
     </div>
     
@@ -229,7 +210,6 @@
             <div class="table-info">
                 <span id="pokerTableIdDisplay">Stół: ---</span>
                 <span id="pokerRoleDisplay">Rola: ---</span>
-                <span id="pokerPotDisplay">Pula: $0</span>
             </div>
             <button id="leavePokerTableBtn" class="btn btn-danger">Opuść Stół</button>
         </div>
@@ -238,7 +218,6 @@
             <div class="community-cards-area">
                 <h3>Karty Wspólne</h3>
                 <div class="community-cards" id="communityCards"></div>
-                <div class="pot-display">Pula: $<span id="currentPot">0</span></div>
             </div>
             
             <div class="game-status">
@@ -250,22 +229,23 @@
             
             <div class="controls-area">
                 <div id="pokerCroupierControls" class="controls hidden">
-                    <button id="pokerStartGameBtn" class="btn btn-gold">Rozpocznij Grę</button>
-                    <button id="pokerNextRoundBtn" class="btn btn-gold hidden">Następna Runda</button>
+                    <button id="pokerStartGameBtn" class="btn btn-gold">🃏 Rozpocznij Grę</button>
+                    <button id="pokerNextPhaseBtn" class="btn btn-gold hidden">Następna Faza</button>
+                    <button id="pokerNextRoundBtn" class="btn btn-gold hidden">Nowa Runda</button>
                 </div>
                 
                 <div id="pokerPlayerControls" class="controls hidden">
-                    <div class="poker-actions">
-                        <button id="pokerFoldBtn" class="btn btn-red">FOLD</button>
-                        <button id="pokerCheckBtn" class="btn btn-silver">CHECK</button>
-                        <button id="pokerCallBtn" class="btn btn-green">CALL $<span id="callAmount">0</span></button>
-                        <div class="raise-controls">
-                            <input type="number" id="raiseAmount" min="0" value="0">
-                            <button id="pokerRaiseBtn" class="btn btn-gold">RAISE</button>
-                        </div>
-                        <button id="pokerAllInBtn" class="btn btn-danger">ALL IN</button>
-                    </div>
+                    <button id="pokerFoldBtn" class="btn btn-red">FOLD</button>
+                    <button id="pokerCheckBtn" class="btn btn-green">CHECK (Gram dalej)</button>
                 </div>
+            </div>
+        </div>
+        
+        <div id="pokerResultsModal" class="results-overlay hidden">
+            <div class="results-panel">
+                <h2>🏆 Zwycięzca Rundy 🏆</h2>
+                <div id="pokerResultsContent"></div>
+                <button id="pokerCloseResultsBtn" class="btn btn-gold">Zamknij</button>
             </div>
         </div>
     </div>
@@ -279,7 +259,6 @@
             </div>
             <div class="player-info-bar">
                 <span class="player-nick">👤 <span id="rouletteDisplayNick">---</span></span>
-                <span class="player-balance">💰 $<span id="rouletteDisplayBalance">0</span></span>
             </div>
         </div>
         
@@ -302,7 +281,7 @@
         </div>
         
         <div class="legal-notice">
-            <p>⚠️ <strong>INFORMACJA PRAWNA:</strong> DevGaming Casino - wszystkie żetony są wirtualne i nie mają żadnej wartości pieniężnej.</p>
+            <p>⚠️ <strong>INFORMACJA PRAWNA:</strong> DevGaming Casino - strona służy wyłącznie celom rozrywkowym.</p>
         </div>
     </div>
     
@@ -321,7 +300,6 @@
                 <div class="wheel-container">
                     <div class="roulette-wheel" id="rouletteWheel">
                         <div class="wheel-inner"></div>
-                        <div class="ball" id="rouletteBall"></div>
                     </div>
                     <div class="winning-number" id="winningNumber">-</div>
                 </div>
@@ -333,8 +311,9 @@
             </div>
             
             <div class="betting-board">
+                <p class="betting-hint">Kliknij aby wybrać na co stawiasz (można wybrać wiele)</p>
                 <div class="roulette-grid" id="rouletteGrid">
-                    <div class="bet-cell zero" data-bet="0">0</div>
+                    <div class="bet-cell zero" data-bet="0">0 (35x)</div>
                     <div class="bet-cell red" data-bet="1">1</div>
                     <div class="bet-cell black" data-bet="2">2</div>
                     <div class="bet-cell red" data-bet="3">3</div>
@@ -374,36 +353,24 @@
                 </div>
                 
                 <div class="outside-bets">
-                    <div class="bet-cell outside" data-bet="1-18">1-18</div>
-                    <div class="bet-cell outside" data-bet="19-36">19-36</div>
-                    <div class="bet-cell outside" data-bet="even">PARZYSTE</div>
-                    <div class="bet-cell outside" data-bet="odd">NIEPARZYSTE</div>
-                    <div class="bet-cell outside red-bet" data-bet="red">CZERWONE</div>
-                    <div class="bet-cell outside black-bet" data-bet="black">CZARNE</div>
+                    <div class="bet-cell outside" data-bet="1-18">1-18 (2x)</div>
+                    <div class="bet-cell outside" data-bet="19-36">19-36 (2x)</div>
+                    <div class="bet-cell outside" data-bet="even">PARZYSTE (2x)</div>
+                    <div class="bet-cell outside" data-bet="odd">NIEPARZYSTE (2x)</div>
+                    <div class="bet-cell outside red-bet" data-bet="red">CZERWONE (2x)</div>
+                    <div class="bet-cell outside black-bet" data-bet="black">CZARNE (2x)</div>
                 </div>
             </div>
             
             <div class="roulette-controls">
                 <div class="my-bets">
-                    <h4>Twoje Zakłady</h4>
-                    <div id="myRouletteBets"></div>
-                    <div class="total-bet">Suma: $<span id="totalRouletteBet">0</span></div>
-                </div>
-                
-                <div class="bet-amount-selector">
-                    <span>Wartość żetonu:</span>
-                    <div class="chip-selector">
-                        <button class="chip-btn roulette-chip active" data-value="10">$10</button>
-                        <button class="chip-btn roulette-chip" data-value="25">$25</button>
-                        <button class="chip-btn roulette-chip" data-value="50">$50</button>
-                        <button class="chip-btn roulette-chip" data-value="100">$100</button>
-                        <button class="chip-btn roulette-chip" data-value="500">$500</button>
-                    </div>
+                    <h4>Twoje Typy</h4>
+                    <div id="myRouletteBets"><p class="no-bets">Wybierz pola na planszy</p></div>
                 </div>
                 
                 <div class="roulette-actions">
-                    <button id="clearRouletteBetsBtn" class="btn btn-silver">Wyczyść Zakłady</button>
-                    <button id="confirmRouletteBetsBtn" class="btn btn-gold">Potwierdź Zakłady</button>
+                    <button id="clearRouletteBetsBtn" class="btn btn-silver">Wyczyść Typy</button>
+                    <button id="confirmRouletteBetsBtn" class="btn btn-gold">✅ Gotowy!</button>
                 </div>
                 
                 <div id="rouletteCroupierControls" class="controls hidden">
