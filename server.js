@@ -129,23 +129,28 @@ function createPokerTable(croupierId, croupierName) {
     const table = {
         id: tableId,
         croupier: { id: croupierId, name: croupierName },
-        dealerHand: [], // Karty "Krupiera" do porównania
         players: [],
         deck: createDeck(),
-        communityCards: [],
+        communityCards: [],      // Karty na stole (flop + turn + river)
+        hiddenCards: [],         // Karty ukryte (turn + river przed odkryciem)
         currentPlayerIndex: -1,
-        currentBetAmount: 0,
-        gamePhase: 'waiting'
+        currentBetAmount: 0,     // Aktualna najwyższa stawka do wyrównania
+        pot: 0,
+        gamePhase: 'waiting',    // waiting -> betting -> dealing -> playing -> reveal -> showdown -> finished
+        bettingRound: 0,         // Numer rundy licytacji
+        lastRaisePlayer: null    // Kto ostatnio podbił (do sprawdzania kto musi jeszcze działać)
     };
     pokerTables.set(tableId, table);
     return table;
 }
 
 function getPokerTableState(table) {
+    // Pokaż tylko odkryte karty wspólne
+    const visibleCommunityCards = [...table.communityCards];
+    
     return {
         id: table.id,
         croupier: table.croupier,
-        dealerHand: table.dealerHand || [],
         players: table.players.map((p, idx) => ({
             id: p.id,
             name: p.name,
@@ -153,10 +158,13 @@ function getPokerTableState(table) {
             folded: p.folded,
             chips: p.chips || 0,
             currentBet: p.currentBet || 0,
+            totalBet: p.totalBet || 0,        // Całkowita stawka w tej rundzie
+            hasActed: p.hasActed || false,    // Czy gracz już działał w tej fazie
             isCurrentTurn: table.currentPlayerIndex !== -1 && 
                           table.players[table.currentPlayerIndex]?.id === p.id
         })),
-        communityCards: table.communityCards,
+        communityCards: visibleCommunityCards,
+        hiddenCardsCount: table.hiddenCards.length,  // Ile kart jest jeszcze zakrytych
         gamePhase: table.gamePhase,
         pot: table.pot || 0,
         currentBetAmount: table.currentBetAmount || 0,
@@ -663,167 +671,260 @@ io.on('connection', (socket) => {
             return;
         }
         
-        startPokerRound(table);
+        // Sprawdź czy wszyscy gracze postawili zakład wejściowy
+        const playersWithBets = table.players.filter(p => (p.totalBet || 0) > 0);
+        if (playersWithBets.length === 0) {
+            socket.emit('error', { message: 'Gracze muszą najpierw postawić zakłady wejściowe!' });
+            return;
+        }
+        
+        startPokerDeal(table);
     });
     
-    function startPokerRound(table) {
+    // Gracz stawia zakład wejściowy (ante)
+    socket.on('pokerPlaceAnte', (data) => {
+        const table = findPlayerTable(socket.id, pokerTables);
+        if (!table || table.gamePhase !== 'waiting') return;
+        
+        const player = table.players.find(p => p.id === socket.id);
+        if (!player) return;
+        
+        const amount = parseInt(data.amount) || 0;
+        if (amount <= 0 || amount > (player.chips || 0)) {
+            socket.emit('error', { message: 'Nieprawidłowa stawka!' });
+            return;
+        }
+        
+        player.totalBet = amount;
+        player.chips -= amount;
+        table.pot = (table.pot || 0) + amount;
+        
+        io.to(table.id).emit('pokerTableUpdate', getPokerTableState(table));
+        io.to(table.id).emit('pokerMessage', { text: `${player.name} stawia ${amount} żetonów na wejście.` });
+    });
+    
+    function startPokerDeal(table) {
         table.deck = createDeck();
         table.communityCards = [];
-        table.dealerHand = [];
-        table.gamePhase = 'flop';
-        table.pot = 0;
+        table.hiddenCards = [];
+        table.gamePhase = 'playing';
         table.currentBetAmount = 0;
+        table.bettingRound = 1;
+        table.lastRaisePlayer = null;
         
         table.players.forEach(p => {
             p.hand = [];
             p.folded = false;
             p.currentBet = 0;
+            p.hasActed = false;
         });
         
-        // Deal 2 cards to dealer (krupier's cards for comparison)
-        table.dealerHand.push(table.deck.pop());
-        table.dealerHand.push(table.deck.pop());
-        
-        // Deal 2 cards to each player
+        // Rozdaj 2 karty każdemu graczowi
         for (let i = 0; i < 2; i++) {
             table.players.forEach(p => {
-                p.hand.push(table.deck.pop());
+                if (p.totalBet > 0) { // Tylko gracze którzy postawili ante
+                    p.hand.push(table.deck.pop());
+                }
             });
         }
         
-        // Deal flop immediately (3 community cards)
+        // Rozdaj 3 karty flop (odkryte) + 2 karty ukryte (turn + river)
         table.deck.pop(); // Burn card
         for (let i = 0; i < 3; i++) {
             table.communityCards.push(table.deck.pop());
         }
         
-        table.currentPlayerIndex = 0;
+        // 2 karty ukryte (turn i river)
+        table.deck.pop(); // Burn card
+        table.hiddenCards.push(table.deck.pop()); // Turn
+        table.deck.pop(); // Burn card
+        table.hiddenCards.push(table.deck.pop()); // River
+        
+        // Znajdź pierwszego gracza który może grać
+        table.currentPlayerIndex = table.players.findIndex(p => p.totalBet > 0 && !p.folded);
         
         io.to(table.id).emit('pokerTableUpdate', getPokerTableState(table));
-        io.to(table.id).emit('pokerMessage', { text: 'Karty rozdane! Flop na stole. Gracze mogą stawiać.' });
+        io.to(table.id).emit('pokerMessage', { text: 'Karty rozdane! Flop na stole. Gracze licytują.' });
     }
     
     socket.on('pokerFold', () => {
         const table = findPlayerTable(socket.id, pokerTables);
-        if (!table) return;
+        if (!table || table.gamePhase !== 'playing') return;
         
         const player = table.players.find(p => p.id === socket.id);
         if (!player || player.folded) return;
         
         player.folded = true;
+        player.hasActed = true;
         
-        // Check if only one player left
-        const activePlayers = table.players.filter(p => !p.folded);
+        // Sprawdź czy został tylko jeden gracz
+        const activePlayers = table.players.filter(p => !p.folded && p.totalBet > 0);
         if (activePlayers.length === 1) {
-            endPokerRound(table, activePlayers[0]);
+            endPokerRound(table, activePlayers[0], 'Zwycięzca przez fold');
             return;
         }
         
+        io.to(table.id).emit('pokerMessage', { text: `${player.name} spasował.` });
         advancePokerTurn(table);
         io.to(table.id).emit('pokerTableUpdate', getPokerTableState(table));
-        io.to(table.id).emit('pokerMessage', { text: `${player.name} spasował.` });
     });
     
     socket.on('pokerCheck', () => {
         const table = findPlayerTable(socket.id, pokerTables);
-        if (!table) return;
+        if (!table || table.gamePhase !== 'playing') return;
         
-        const currentPlayer = table.players[table.currentPlayerIndex];
-        if (currentPlayer?.id !== socket.id) return;
+        const player = table.players.find(p => p.id === socket.id);
+        if (!player || player.folded) return;
         
+        // Można czekać tylko jeśli nikt nie podbił lub wyrównaliśmy
+        if (table.currentBetAmount > 0 && (player.currentBet || 0) < table.currentBetAmount) {
+            socket.emit('error', { message: 'Musisz wyrównać lub spasować - ktoś podbił!' });
+            return;
+        }
+        
+        player.hasActed = true;
+        
+        io.to(table.id).emit('pokerMessage', { text: `${player.name} czeka (check).` });
         advancePokerTurn(table);
         io.to(table.id).emit('pokerTableUpdate', getPokerTableState(table));
     });
     
-    socket.on('pokerNextPhase', () => {
+    socket.on('pokerCall', () => {
+        const table = findPlayerTable(socket.id, pokerTables);
+        if (!table || table.gamePhase !== 'playing') return;
+        
+        const player = table.players.find(p => p.id === socket.id);
+        if (!player || player.folded) return;
+        
+        const toCall = table.currentBetAmount - (player.currentBet || 0);
+        if (toCall <= 0) {
+            socket.emit('error', { message: 'Nie ma nic do wyrównania!' });
+            return;
+        }
+        
+        if (toCall > (player.chips || 0)) {
+            socket.emit('error', { message: 'Za mało żetonów!' });
+            return;
+        }
+        
+        player.chips -= toCall;
+        player.currentBet = table.currentBetAmount;
+        table.pot += toCall;
+        player.hasActed = true;
+        
+        io.to(table.id).emit('pokerMessage', { text: `${player.name} wyrównuje ${toCall} żetonów.` });
+        advancePokerTurn(table);
+        io.to(table.id).emit('pokerTableUpdate', getPokerTableState(table));
+    });
+    
+    socket.on('pokerRaise', (data) => {
+        const table = findPlayerTable(socket.id, pokerTables);
+        if (!table || table.gamePhase !== 'playing') return;
+        
+        const player = table.players.find(p => p.id === socket.id);
+        if (!player || player.folded) return;
+        
+        const raiseAmount = parseInt(data.amount) || 0;
+        const totalNeeded = (table.currentBetAmount - (player.currentBet || 0)) + raiseAmount;
+        
+        if (raiseAmount <= 0) {
+            socket.emit('error', { message: 'Podaj kwotę podbicia!' });
+            return;
+        }
+        
+        if (totalNeeded > (player.chips || 0)) {
+            socket.emit('error', { message: 'Za mało żetonów!' });
+            return;
+        }
+        
+        player.chips -= totalNeeded;
+        player.currentBet = table.currentBetAmount + raiseAmount;
+        table.currentBetAmount = player.currentBet;
+        table.pot += totalNeeded;
+        player.hasActed = true;
+        table.lastRaisePlayer = player.id;
+        
+        // Resetuj hasActed dla innych graczy - muszą odpowiedzieć na podbicie
+        table.players.forEach(p => {
+            if (p.id !== player.id && !p.folded && p.totalBet > 0) {
+                p.hasActed = false;
+            }
+        });
+        
+        io.to(table.id).emit('pokerMessage', { text: `${player.name} podbija o ${raiseAmount} żetonów! Aktualna stawka: ${table.currentBetAmount}` });
+        advancePokerTurn(table);
+        io.to(table.id).emit('pokerTableUpdate', getPokerTableState(table));
+    });
+    
+    socket.on('pokerRevealCards', () => {
         const table = findPlayerTable(socket.id, pokerTables);
         if (!table || table.croupier.id !== socket.id) return;
+        if (table.gamePhase !== 'playing') return;
+        if (table.hiddenCards.length === 0) return;
         
-        advancePokerPhase(table);
+        // Odkryj wszystkie ukryte karty
+        while (table.hiddenCards.length > 0) {
+            table.communityCards.push(table.hiddenCards.shift());
+        }
+        
+        table.gamePhase = 'showdown';
+        
+        // Porównaj ręce i wyłoń zwycięzcę
+        const activePlayers = table.players.filter(p => !p.folded && p.totalBet > 0);
+        
+        let bestPlayer = null;
+        let bestPlayerResult = { score: 0, handName: '' };
+        
+        activePlayers.forEach(p => {
+            const result = evaluatePokerHand(p.hand, table.communityCards);
+            if (result.score > bestPlayerResult.score) {
+                bestPlayerResult = result;
+                bestPlayer = p;
+            }
+        });
+        
+        if (bestPlayer) {
+            endPokerRound(table, bestPlayer, bestPlayerResult.handName);
+        }
     });
     
     function advancePokerTurn(table) {
+        const activePlayers = table.players.filter(p => !p.folded && p.totalBet > 0);
+        
+        // Sprawdź czy wszyscy aktywni gracze wykonali akcję
+        const allActed = activePlayers.every(p => p.hasActed);
+        const allEqualBets = activePlayers.every(p => (p.currentBet || 0) === table.currentBetAmount);
+        
+        if (allActed && allEqualBets) {
+            // Runda licytacji zakończona - krupier może odkryć karty
+            io.to(table.id).emit('pokerMessage', { text: 'Licytacja zakończona. Krupier może odkryć pozostałe karty.' });
+            return;
+        }
+        
+        // Znajdź następnego gracza który musi działać
         let nextIndex = (table.currentPlayerIndex + 1) % table.players.length;
         let checked = 0;
         
         while (checked < table.players.length) {
-            if (!table.players[nextIndex].folded) {
+            const p = table.players[nextIndex];
+            if (!p.folded && p.totalBet > 0 && !p.hasActed) {
                 table.currentPlayerIndex = nextIndex;
                 return;
             }
             nextIndex = (nextIndex + 1) % table.players.length;
             checked++;
         }
-    }
-    
-    function advancePokerPhase(table) {
-        table.currentPlayerIndex = 0;
-        table.currentBetAmount = 0;
         
-        // Reset current bets for new round
-        table.players.forEach(p => p.currentBet = 0);
-        
-        while (table.players[table.currentPlayerIndex]?.folded) {
-            table.currentPlayerIndex++;
-        }
-        
-        if (table.communityCards.length === 3) {
-            // Deal turn
-            table.deck.pop();
-            table.communityCards.push(table.deck.pop());
-            table.gamePhase = 'turn';
-            io.to(table.id).emit('pokerMessage', { text: 'Turn!' });
-        } else if (table.communityCards.length === 4) {
-            // Deal river
-            table.deck.pop();
-            table.communityCards.push(table.deck.pop());
-            table.gamePhase = 'river';
-            io.to(table.id).emit('pokerMessage', { text: 'River!' });
-        } else {
-            // Showdown - compare with dealer
-            table.gamePhase = 'showdown';
-            
-            const activePlayers = table.players.filter(p => !p.folded);
-            
-            // Evaluate dealer hand
-            const dealerResult = evaluatePokerHand(table.dealerHand, table.communityCards);
-            
-            // Find best player
-            let bestPlayer = null;
-            let bestPlayerResult = { score: 0, handName: '' };
-            
-            activePlayers.forEach(p => {
-                const result = evaluatePokerHand(p.hand, table.communityCards);
-                if (result.score > bestPlayerResult.score) {
-                    bestPlayerResult = result;
-                    bestPlayer = p;
-                }
-            });
-            
-            // Compare dealer vs best player
-            if (dealerResult.score > bestPlayerResult.score) {
-                // Dealer wins
-                endPokerRound(table, { id: 'dealer', name: 'Krupier', hand: table.dealerHand }, dealerResult.handName);
-            } else if (bestPlayer) {
-                // Player wins
-                endPokerRound(table, bestPlayer, bestPlayerResult.handName);
-            }
-            return;
-        }
-        
-        io.to(table.id).emit('pokerTableUpdate', getPokerTableState(table));
+        // Wszyscy działali - koniec rundy licytacji
+        io.to(table.id).emit('pokerMessage', { text: 'Licytacja zakończona. Krupier może odkryć pozostałe karty.' });
     }
     
     function endPokerRound(table, winner, handName = 'Zwycięzca przez fold') {
         table.gamePhase = 'finished';
         
-        // Give pot to winner (if not dealer)
+        // Give pot to winner
         const potWinnings = table.pot || 0;
-        
-        if (winner.id !== 'dealer') {
-            winner.chips = (winner.chips || 0) + potWinnings;
-        }
-        // If dealer wins, pot is lost
+        winner.chips = (winner.chips || 0) + potWinnings;
         
         io.to(table.id).emit('pokerTableUpdate', getPokerTableState(table));
         io.to(table.id).emit('pokerRoundResult', {
@@ -832,18 +933,34 @@ io.on('connection', (socket) => {
                 name: winner.name,
                 hand: winner.hand,
                 handName: handName,
-                winnings: winner.id !== 'dealer' ? potWinnings : 0,
+                winnings: potWinnings,
                 newChips: winner.chips || 0
             }
         });
-        io.to(table.id).emit('pokerMessage', { text: `🏆 ${winner.name} wygrywa${winner.id !== 'dealer' ? ` ${potWinnings} żetonów` : ''} z: ${handName}!` });
+        io.to(table.id).emit('pokerMessage', { text: `🏆 ${winner.name} wygrywa ${potWinnings} żetonów z: ${handName}!` });
     }
     
     socket.on('pokerNextRound', () => {
         const table = findPlayerTable(socket.id, pokerTables);
         if (!table || table.croupier.id !== socket.id || table.gamePhase !== 'finished') return;
         
-        startPokerRound(table);
+        // Reset dla nowej rundy
+        table.gamePhase = 'waiting';
+        table.pot = 0;
+        table.currentBetAmount = 0;
+        table.communityCards = [];
+        table.hiddenCards = [];
+        
+        table.players.forEach(p => {
+            p.hand = [];
+            p.folded = false;
+            p.currentBet = 0;
+            p.totalBet = 0;
+            p.hasActed = false;
+        });
+        
+        io.to(table.id).emit('pokerTableUpdate', getPokerTableState(table));
+        io.to(table.id).emit('pokerMessage', { text: 'Nowa runda! Gracze mogą stawiać zakłady wejściowe.' });
     });
     
     socket.on('pokerAssignChips', (data) => {
@@ -857,31 +974,6 @@ io.on('connection', (socket) => {
         
         io.to(table.id).emit('pokerTableUpdate', getPokerTableState(table));
         io.to(table.id).emit('pokerMessage', { text: `Krupier przydzielił ${data.amount} żetonów graczowi ${player.name}` });
-    });
-    
-    socket.on('pokerPlaceBet', (data) => {
-        const table = findPlayerTable(socket.id, pokerTables);
-        if (!table) return;
-        if (!['flop', 'turn', 'river'].includes(table.gamePhase)) return;
-        
-        const player = table.players.find(p => p.id === socket.id);
-        if (!player) return;
-        
-        const betAmount = parseInt(data.amount) || 0;
-        if (betAmount <= 0 || betAmount > (player.chips || 0)) {
-            socket.emit('error', { message: 'Nieprawidłowa stawka!' });
-            return;
-        }
-        
-        player.currentBet += betAmount;
-        player.chips -= betAmount;
-        table.pot = (table.pot || 0) + betAmount;
-        if (player.currentBet > table.currentBetAmount) {
-            table.currentBetAmount = player.currentBet;
-        }
-        
-        io.to(table.id).emit('pokerTableUpdate', getPokerTableState(table));
-        io.to(table.id).emit('pokerMessage', { text: `${player.name} postawił ${betAmount} żetonów!` });
     });
     
     // ========== ROULETTE EVENTS ==========

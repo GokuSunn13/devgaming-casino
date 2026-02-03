@@ -265,22 +265,31 @@
             
                 <div class="controls-area">
                     <div id="pokerCroupierControls" class="controls hidden">
-                        <button id="pokerStartGameBtn" class="btn btn-gold">🃏 Rozpocznij Grę</button>
-                        <button id="pokerNextPhaseBtn" class="btn btn-gold hidden">Następna Faza</button>
-                        <button id="pokerNextRoundBtn" class="btn btn-gold hidden">Nowa Runda</button>
+                        <button id="pokerStartGameBtn" class="btn btn-gold">🃏 Rozdaj Karty</button>
+                        <button id="pokerRevealCardsBtn" class="btn btn-gold hidden">👁️ Odkryj Karty (Turn + River)</button>
+                        <button id="pokerNextRoundBtn" class="btn btn-gold hidden">🔄 Nowa Runda</button>
+                    </div>
+                    
+                    <div id="pokerAnteControls" class="betting-controls hidden">
+                        <div class="bet-chips-input">
+                            <label>Zakład wejściowy:</label>
+                            <input type="number" id="pokerAnteInput" min="1" value="10" class="chips-input">
+                            <button id="pokerPlaceAnteBtn" class="btn btn-gold">💰 Wejdź do gry</button>
+                        </div>
                     </div>
                     
                     <div id="pokerBettingControls" class="betting-controls hidden">
                         <div class="bet-chips-input">
-                            <label>Stawka:</label>
-                            <input type="number" id="pokerBetInput" min="1" value="10" class="chips-input">
-                            <button id="pokerPlaceBetBtn" class="btn btn-gold">💰 Postaw</button>
+                            <label>Podbij o:</label>
+                            <input type="number" id="pokerRaiseInput" min="1" value="10" class="chips-input">
+                            <button id="pokerRaiseBtn" class="btn btn-gold">⬆️ Podbij</button>
                         </div>
                     </div>
                     
                     <div id="pokerPlayerControls" class="controls hidden">
-                        <button id="pokerFoldBtn" class="btn btn-red">FOLD</button>
-                        <button id="pokerCheckBtn" class="btn btn-green">CHECK (Gram dalej)</button>
+                        <button id="pokerFoldBtn" class="btn btn-red">❌ FOLD (Pasuję)</button>
+                        <button id="pokerCheckBtn" class="btn btn-green">✋ CHECK (Czekam)</button>
+                        <button id="pokerCallBtn" class="btn btn-blue">📞 CALL (Wyrównuję)</button>
                     </div>
                 </div>
             </div>
