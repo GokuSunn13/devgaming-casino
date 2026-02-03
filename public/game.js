@@ -18,45 +18,6 @@ let previousPlayerCardCounts = {};
 // Roulette state
 let rouletteBets = [];
 
-// ==================== SOUND SYSTEM ====================
-// Preload audio files
-const sounds = {
-    click: new Audio('/sounds/click.mp3'),
-    card: new Audio('/sounds/card.mp3'),
-    bet: new Audio('/sounds/chips.mp3'),
-    spin: new Audio('/sounds/roulette.mp3'),
-    win: new Audio('/sounds/win.mp3')
-};
-
-// Preload all sounds
-Object.values(sounds).forEach(audio => {
-    audio.load();
-    audio.volume = 0.5;
-});
-
-function playSound(type) {
-    const sound = sounds[type];
-    if (sound) {
-        // Zatrzymaj i zresetuj jeśli już gra
-        sound.currentTime = 0;
-        sound.play().catch(e => console.log('Audio play failed:', e));
-    }
-}
-
-// Globalny dźwięk kliknięcia dla wszystkich przycisków
-document.addEventListener('click', (e) => {
-    if (e.target.matches('button, .btn, .game-card, .bet-cell')) {
-        // Nie odtwarzaj click dla przycisków które mają własne dźwięki
-        const id = e.target.id;
-        const skipIds = ['bjPlaceBetBtn', 'pokerPlaceBetBtn', 'confirmRouletteBetsBtn', 
-                         'rouletteSpinBtn', 'bjDealCardsBtn', 'bjHitBtn', 'bjCroupierPlayBtn',
-                         'bjRevealCardBtn', 'pokerStartGameBtn', 'pokerNextPhaseBtn'];
-        if (!skipIds.includes(id)) {
-            playSound('click');
-        }
-    }
-});
-
 // Initialize
 socket.on('connect', () => {
     myPlayerId = socket.id;
@@ -151,17 +112,10 @@ document.getElementById('leaveBlackjackTableBtn').addEventListener('click', () =
 document.getElementById('bjDealCardsBtn').addEventListener('click', () => {
     previousDealerCardCount = 0;
     previousPlayerCardCounts = {};
-    playSound('card');
     socket.emit('bjDealCards');
 });
-document.getElementById('bjCroupierPlayBtn').addEventListener('click', () => {
-    playSound('card');
-    socket.emit('bjCroupierPlay');
-});
-document.getElementById('bjRevealCardBtn').addEventListener('click', () => {
-    playSound('card');
-    socket.emit('bjRevealNextCard');
-});
+document.getElementById('bjCroupierPlayBtn').addEventListener('click', () => socket.emit('bjCroupierPlay'));
+document.getElementById('bjRevealCardBtn').addEventListener('click', () => socket.emit('bjRevealNextCard'));
 document.getElementById('bjNewRoundBtn').addEventListener('click', () => {
     previousDealerCardCount = 0;
     previousPlayerCardCounts = {};
@@ -171,13 +125,9 @@ document.getElementById('bjNewRoundBtn').addEventListener('click', () => {
 // Player controls
 document.getElementById('bjPlaceBetBtn').addEventListener('click', () => {
     const amount = parseInt(document.getElementById('bjBetInput').value) || 0;
-    playSound('bet');
     socket.emit('bjPlaceBet', { amount });
 });
-document.getElementById('bjHitBtn').addEventListener('click', () => {
-    playSound('card');
-    socket.emit('bjHit');
-});
+document.getElementById('bjHitBtn').addEventListener('click', () => socket.emit('bjHit'));
 document.getElementById('bjStandBtn').addEventListener('click', () => socket.emit('bjStand'));
 
 // Croupier chips assignment
@@ -430,14 +380,8 @@ document.getElementById('leavePokerTableBtn').addEventListener('click', () => {
 });
 
 // Poker controls
-document.getElementById('pokerStartGameBtn').addEventListener('click', () => {
-    playSound('card');
-    socket.emit('pokerStartGame');
-});
-document.getElementById('pokerNextPhaseBtn').addEventListener('click', () => {
-    playSound('card');
-    socket.emit('pokerNextPhase');
-});
+document.getElementById('pokerStartGameBtn').addEventListener('click', () => socket.emit('pokerStartGame'));
+document.getElementById('pokerNextPhaseBtn').addEventListener('click', () => socket.emit('pokerNextPhase'));
 document.getElementById('pokerNextRoundBtn').addEventListener('click', () => socket.emit('pokerNextRound'));
 document.getElementById('pokerFoldBtn').addEventListener('click', () => socket.emit('pokerFold'));
 document.getElementById('pokerCheckBtn').addEventListener('click', () => socket.emit('pokerCheck'));
@@ -653,7 +597,6 @@ document.getElementById('pokerAssignChipsBtn').addEventListener('click', () => {
 // Poker betting
 document.getElementById('pokerPlaceBetBtn').addEventListener('click', () => {
     const amount = parseInt(document.getElementById('pokerBetInput').value) || 0;
-    playSound('bet');
     socket.emit('pokerPlaceBet', { amount });
 });
 
@@ -692,17 +635,13 @@ document.getElementById('clearRouletteBetsBtn').addEventListener('click', () => 
 document.getElementById('confirmRouletteBetsBtn').addEventListener('click', () => {
     if (rouletteBets.length > 0) {
         const betAmount = parseInt(document.getElementById('betChipsInput').value) || 10;
-        playSound('bet');
         socket.emit('rouletteConfirmBets', { bets: rouletteBets, betAmount: betAmount });
     } else {
         alert('Wybierz przynajmniej jeden typ!');
     }
 });
 
-document.getElementById('rouletteSpinBtn').addEventListener('click', () => {
-    playSound('spin');
-    socket.emit('rouletteSpin');
-});
+document.getElementById('rouletteSpinBtn').addEventListener('click', () => socket.emit('rouletteSpin'));
 document.getElementById('rouletteNewRoundBtn').addEventListener('click', () => socket.emit('rouletteNewRound'));
 document.getElementById('rouletteCloseResultsBtn').addEventListener('click', () => {
     document.getElementById('rouletteResultsModal').classList.add('hidden');
