@@ -19,248 +19,28 @@ let previousPlayerCardCounts = {};
 let rouletteBets = [];
 
 // ==================== SOUND SYSTEM ====================
-const AudioContext = window.AudioContext || window.webkitAudioContext;
-let audioCtx = null;
-let spinSoundSource = null;
+// Preload audio files
+const sounds = {
+    click: new Audio('/sounds/click.mp3'),
+    card: new Audio('/sounds/card.mp3'),
+    bet: new Audio('/sounds/chips.mp3'),
+    spin: new Audio('/sounds/roulette.mp3'),
+    win: new Audio('/sounds/win.mp3')
+};
 
-function initAudio() {
-    if (!audioCtx) {
-        audioCtx = new AudioContext();
-    }
-    if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-    }
-}
-
-// Generuje szum biały dla efektów
-function createNoiseBuffer(duration) {
-    const sampleRate = audioCtx.sampleRate;
-    const bufferSize = sampleRate * duration;
-    const buffer = audioCtx.createBuffer(1, bufferSize, sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-        data[i] = Math.random() * 2 - 1;
-    }
-    return buffer;
-}
+// Preload all sounds
+Object.values(sounds).forEach(audio => {
+    audio.load();
+    audio.volume = 0.5;
+});
 
 function playSound(type) {
-    initAudio();
-    if (!audioCtx) return;
-    
-    switch(type) {
-        case 'click':
-            // Dźwięk kliknięcia przycisku
-            playClickSound();
-            break;
-            
-        case 'card':
-            // Dźwięk rozkładania karty - szybki szum
-            playCardSound();
-            break;
-            
-        case 'bet':
-            // Dźwięk rzucania żetonami
-            playChipsSound();
-            break;
-            
-        case 'spin':
-            // Dźwięk kręcenia ruletki - kulka tocząca się
-            playRouletteSpinSound();
-            break;
-            
-        case 'win':
-            // Dźwięk wygranej
-            playWinSound();
-            break;
+    const sound = sounds[type];
+    if (sound) {
+        // Zatrzymaj i zresetuj jeśli już gra
+        sound.currentTime = 0;
+        sound.play().catch(e => console.log('Audio play failed:', e));
     }
-}
-
-function playClickSound() {
-    const oscillator = audioCtx.createOscillator();
-    const gainNode = audioCtx.createGain();
-    
-    oscillator.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
-    
-    oscillator.type = 'sine';
-    oscillator.frequency.setValueAtTime(1000, audioCtx.currentTime);
-    oscillator.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.05);
-    
-    gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
-    
-    oscillator.start(audioCtx.currentTime);
-    oscillator.stop(audioCtx.currentTime + 0.05);
-}
-
-function playCardSound() {
-    // Szybki szum symulujący kartę
-    const noiseBuffer = createNoiseBuffer(0.08);
-    const noiseSource = audioCtx.createBufferSource();
-    noiseSource.buffer = noiseBuffer;
-    
-    const filter = audioCtx.createBiquadFilter();
-    filter.type = 'highpass';
-    filter.frequency.value = 2000;
-    
-    const gainNode = audioCtx.createGain();
-    gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
-    
-    noiseSource.connect(filter);
-    filter.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
-    
-    noiseSource.start(audioCtx.currentTime);
-}
-
-function playChipsSound() {
-    // Dźwięk rzucania żetonami - kilka metalicznych stuknięć
-    const baseTime = audioCtx.currentTime;
-    
-    for (let i = 0; i < 5; i++) {
-        const delay = i * 0.04 + Math.random() * 0.02;
-        const freq = 3000 + Math.random() * 2000;
-        
-        const oscillator = audioCtx.createOscillator();
-        const gainNode = audioCtx.createGain();
-        
-        oscillator.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
-        
-        oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(freq, baseTime + delay);
-        oscillator.frequency.exponentialRampToValueAtTime(freq * 0.5, baseTime + delay + 0.06);
-        
-        gainNode.gain.setValueAtTime(0, baseTime + delay);
-        gainNode.gain.linearRampToValueAtTime(0.15 - i * 0.02, baseTime + delay + 0.005);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, baseTime + delay + 0.08);
-        
-        oscillator.start(baseTime + delay);
-        oscillator.stop(baseTime + delay + 0.1);
-    }
-    
-    // Dodaj szum ceramiki
-    const noiseBuffer = createNoiseBuffer(0.25);
-    const noiseSource = audioCtx.createBufferSource();
-    noiseSource.buffer = noiseBuffer;
-    
-    const filter = audioCtx.createBiquadFilter();
-    filter.type = 'bandpass';
-    filter.frequency.value = 4000;
-    filter.Q.value = 2;
-    
-    const noiseGain = audioCtx.createGain();
-    noiseGain.gain.setValueAtTime(0.1, baseTime);
-    noiseGain.gain.exponentialRampToValueAtTime(0.001, baseTime + 0.25);
-    
-    noiseSource.connect(filter);
-    filter.connect(noiseGain);
-    noiseGain.connect(audioCtx.destination);
-    
-    noiseSource.start(baseTime);
-}
-
-function playRouletteSpinSound() {
-    // Zatrzymaj poprzedni dźwięk jeśli trwa
-    if (spinSoundSource) {
-        try { spinSoundSource.stop(); } catch(e) {}
-    }
-    
-    const duration = 5;
-    const baseTime = audioCtx.currentTime;
-    
-    // Główny dźwięk obracającego się koła
-    const noiseBuffer = createNoiseBuffer(duration);
-    spinSoundSource = audioCtx.createBufferSource();
-    spinSoundSource.buffer = noiseBuffer;
-    
-    const filter = audioCtx.createBiquadFilter();
-    filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(800, baseTime);
-    filter.frequency.linearRampToValueAtTime(400, baseTime + duration);
-    filter.Q.value = 5;
-    
-    const gainNode = audioCtx.createGain();
-    gainNode.gain.setValueAtTime(0.15, baseTime);
-    gainNode.gain.linearRampToValueAtTime(0.08, baseTime + duration * 0.7);
-    gainNode.gain.exponentialRampToValueAtTime(0.001, baseTime + duration);
-    
-    spinSoundSource.connect(filter);
-    filter.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
-    
-    spinSoundSource.start(baseTime);
-    
-    // Dźwięk kulki uderzającej o przegródki - spowalniający
-    let clickTime = baseTime;
-    let interval = 0.05; // Początkowy interwał
-    
-    while (clickTime < baseTime + duration - 0.3) {
-        const clickOsc = audioCtx.createOscillator();
-        const clickGain = audioCtx.createGain();
-        
-        clickOsc.connect(clickGain);
-        clickGain.connect(audioCtx.destination);
-        
-        const freqVariation = 2000 + Math.random() * 1500;
-        clickOsc.type = 'sine';
-        clickOsc.frequency.setValueAtTime(freqVariation, clickTime);
-        clickOsc.frequency.exponentialRampToValueAtTime(freqVariation * 0.3, clickTime + 0.03);
-        
-        const volume = 0.08 * (1 - (clickTime - baseTime) / duration);
-        clickGain.gain.setValueAtTime(volume, clickTime);
-        clickGain.gain.exponentialRampToValueAtTime(0.001, clickTime + 0.04);
-        
-        clickOsc.start(clickTime);
-        clickOsc.stop(clickTime + 0.05);
-        
-        // Spowalniaj kliknięcia
-        interval *= 1.08;
-        clickTime += interval;
-    }
-    
-    // Końcowe stuknięcie gdy kulka wpada do przegródki
-    const finalTime = baseTime + duration - 0.2;
-    const finalOsc = audioCtx.createOscillator();
-    const finalGain = audioCtx.createGain();
-    
-    finalOsc.connect(finalGain);
-    finalGain.connect(audioCtx.destination);
-    
-    finalOsc.type = 'sine';
-    finalOsc.frequency.setValueAtTime(1200, finalTime);
-    finalOsc.frequency.exponentialRampToValueAtTime(400, finalTime + 0.15);
-    
-    finalGain.gain.setValueAtTime(0.2, finalTime);
-    finalGain.gain.exponentialRampToValueAtTime(0.001, finalTime + 0.2);
-    
-    finalOsc.start(finalTime);
-    finalOsc.stop(finalTime + 0.25);
-}
-
-function playWinSound() {
-    const baseTime = audioCtx.currentTime;
-    const notes = [523, 659, 784, 1047]; // C5, E5, G5, C6
-    
-    notes.forEach((freq, i) => {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        
-        osc.type = 'sine';
-        osc.frequency.value = freq;
-        
-        gain.gain.setValueAtTime(0, baseTime + i * 0.1);
-        gain.gain.linearRampToValueAtTime(0.2, baseTime + i * 0.1 + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.001, baseTime + i * 0.1 + 0.3);
-        
-        osc.start(baseTime + i * 0.1);
-        osc.stop(baseTime + i * 0.1 + 0.35);
-    });
 }
 
 // Globalny dźwięk kliknięcia dla wszystkich przycisków
